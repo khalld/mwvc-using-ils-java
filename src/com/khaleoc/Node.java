@@ -43,8 +43,8 @@ public class Node {
         this.edgeList = edgeList;
     }
 
-    public int getEdgeSize(List<Edge> edgeList){
-        return edgeList.size();
+    public int getEdgeSize(){
+        return this.edgeList.size();
     }
 
     @Override

@@ -93,17 +93,72 @@ public class Main {
 
         }
 
-        return inputSolution;
+        Solution inputSolutionChecked = completeSol(inputSolution, allNd);
+
+        return inputSolutionChecked;
     }
 
-    public static LocalSearchBean localSearch(Solution inputSolution){
-        int iterator = 100;
-        LocalSearchBean toReturn = new LocalSearchBean(inputSolution, iterator);
+    public static LocalSearchBean localSearch(Solution inputSolution, List<Node> allNd){
+        int iterator = 0;
+
+        List<Node> alreadySelected = inputSolution.getSelNodes();
+        List<Node> notSelectedNodes = new ArrayList<>(allNd);
+        notSelectedNodes.removeAll(alreadySelected);
+
+        int approx_cost_best = inputSolution.getTotalCost();
+        int approx_cost = 0;
+        Node toRem = null;
+        Node toAdd = null;
+
+        if (notSelectedNodes.size() > 0 ){
+            // Posso provare lo swap dei nodi selezionati
+
+            for (int i = 0; i < alreadySelected.size(); i++){
+                Node wantToRemove = alreadySelected.get(i);
+                for (int j=0; j< notSelectedNodes.size(); j++){
+                    Node wantToAdd = alreadySelected.get(j);
+
+                    approx_cost = inputSolution.getTotalCost() - wantToRemove.getWeight() + wantToAdd.getWeight();
+                    iterator += 1;
+
+                    if (approx_cost < inputSolution.getTotalCost()){
+                        if (approx_cost_best > approx_cost) {
+                            toRem = wantToRemove;
+                            toAdd = wantToAdd;
+                            approx_cost_best = approx_cost;
+                        }
+                    }
+                }
+            }
+        } else {
+            // Posso solo eliminare nodi per 'alleggerire' la soluzione
+            for (int i = 0; i < alreadySelected.size(); i++){
+                Node wantToRemove = alreadySelected.get(i);
+                approx_cost = inputSolution.getTotalCost() - wantToRemove.getWeight();
+                iterator += 1;
+
+                if (approx_cost < inputSolution.getTotalCost()){
+                    if (approx_cost_best > approx_cost) {
+                        toRem = wantToRemove;
+                        approx_cost_best = approx_cost;
+                    }
+                }
+            }
+        }
+        if (toAdd != null) {
+            inputSolution.addNode(toAdd);
+        }
+        if (toRem != null) {
+            inputSolution.removeNode(toRem);
+        }
+
+        Solution inputSolChecked = completeSol(inputSolution, allNd);
+        LocalSearchBean toReturn = new LocalSearchBean(inputSolChecked, iterator);
 
         return toReturn;
     }
 
-    public static Solution criteria(Solution prevSol, Solution newSol){
+    public static Solution acceptanceCriteria(Solution prevSol, Solution newSol){
 
         if (prevSol.getTotalCost() > newSol.getTotalCost()){
             return newSol;
@@ -120,7 +175,8 @@ public class Main {
             List<Node> notSelectedNodes = new ArrayList<>(allAvailableNodes);
             notSelectedNodes.removeAll(alreadySelected);
 
-            notSelectedNodes.sort(Comparator.comparing(Node::getWeight));
+//            notSelectedNodes.sort(Comparator.comparing(Node::getWeight));
+            notSelectedNodes.sort(Comparator.comparing(Node::getEdgeSize).reversed());
 
             inputSol.addNode(notSelectedNodes.get(0));
             isComplete = inputSol.isComplete();
@@ -165,12 +221,10 @@ public class Main {
 
         while (currentIter < MAX_EVALS){
             Solution perturbedSolution = perturbation(allNd, currentSol);
-            // TODO:
-            Solution perturbedSolutionComplete = completeSol(perturbedSolution, allNd);
-            LocalSearchBean localSearchBean = localSearch(perturbedSolutionComplete);
+            LocalSearchBean localSearchBean = localSearch(perturbedSolution, allNd);
             Solution lsSolution = localSearchBean.getSolution();
 
-            currentSol = criteria(lsSolution, currentSol);
+            currentSol = acceptanceCriteria(lsSolution, currentSol);
 
             currentIter+= localSearchBean.getIteration();
 
@@ -179,12 +233,10 @@ public class Main {
 
         }
 
-
-
         long endTime = System.nanoTime();
         long durationMs = (endTime - startTime) / 1000000;  //divide by 1000000 to get milliseconds.
 
-        System.out.println("Execution time for " + bestSolutionToRet.getInstanceName() + ": " + durationMs +"\n");
+        System.out.println("Execution time for " + bestSolutionToRet.getInstanceName() + ": " + durationMs +" ms\n");
 
         Plot plt = Plot.create();
         plt.plot().add(coordX, coordY, "o-");
@@ -199,7 +251,7 @@ public class Main {
     public static void main(String[] args) throws IOException, PythonExecutionException {
         System.out.println("\n\n");
 
-        String instancePath = "wvcp-instances/vc_20_60_01.txt";
+        String instancePath = "wvcp-instances/vc_800_10000.txt";
         Graph instGraph = getInstance(instancePath);
 //        instGraph.printInfo();
 
