@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 
 public class Main {
     public static final int MAX_EVALS = 20000;
-    public static final String FOLDER_INSTANCES = "wvcp-instances-red";
+    public static final String FOLDER_INSTANCES = "wvcp-instances";
     public static final String BENCHMARK_FOLDER = "benchmarks/";
     public static final String CONV_GRAPH_FOLDER = "benchmarks/convergence_graphs/";
 
@@ -57,7 +57,32 @@ public class Main {
         return currentGraph;
     }
 
-    public static Solution perturbation(List<Node> allNd, Solution inputSolution) {
+    public static Solution weakPerturbation(List<Node> allNd, Solution inputSolution) {
+        List<Node> alreadySelected = inputSolution.getSelNodes();
+        List<Node> notSelectedNodes = new ArrayList<>(allNd);
+        notSelectedNodes.removeAll(alreadySelected);
+
+        if(notSelectedNodes.size() == 0){
+            // Posso solo rimuovere
+            int randomIndex = new Random().nextInt(alreadySelected.size());
+            Node toRem = allNd.get(randomIndex);
+            inputSolution.removeNode(toRem);
+        } else {
+            // Posso anche aggiungere nodi alla perturbazione
+            int randomIndexAdd = new Random().nextInt(notSelectedNodes.size());
+            int randomIndexRem = new Random().nextInt(alreadySelected.size());
+            Node toRem = allNd.get(randomIndexRem);
+            Node toAdd = allNd.get(randomIndexAdd);
+            inputSolution.removeNode(toRem);
+            inputSolution.addNode(toAdd);
+        }
+
+//        Solution inputSolutionChecked = completeSol(inputSolution, allNd);
+
+        return inputSolution;
+    }
+
+    public static Solution strongPerturbation(List<Node> allNd, Solution inputSolution) {
 
         List<Node> alreadySelected = inputSolution.getSelNodes();
         List<Node> notSelectedNodes = new ArrayList<>(allNd);
@@ -95,9 +120,9 @@ public class Main {
 
         }
 
-        Solution inputSolutionChecked = completeSol(inputSolution, allNd);
+//        Solution inputSolutionChecked = completeSol(inputSolution, allNd);
 
-        return inputSolutionChecked;
+        return inputSolution;
     }
 
     public static LocalSearchObj localSearch(Solution inputSolution, List<Node> allNd){
@@ -128,6 +153,7 @@ public class Main {
                             toRem = wantToRemove;
                             toAdd = wantToAdd;
                             approx_cost_best = approx_cost;
+                            break;
                         }
                     }
                 }
@@ -143,6 +169,7 @@ public class Main {
                     if (approx_cost_best > approx_cost) {
                         toRem = wantToRemove;
                         approx_cost_best = approx_cost;
+                        break;
                     }
                 }
             }
@@ -164,11 +191,12 @@ public class Main {
 
         if (prevSol.getTotalCost() > newSol.getTotalCost()){
             return newSol;
-        } else if (lockCounter % 25 == 0) {
-            int randomIndex = new Random().nextInt(termMemory.size());
-            Solution alreadyFoundedSol = termMemory.get(randomIndex);
-            return alreadyFoundedSol;
         }
+//        else if (lockCounter % 25 == 0) {
+//            int randomIndex = new Random().nextInt(termMemory.size());
+//            Solution alreadyFoundedSol = termMemory.get(randomIndex);
+//            return alreadyFoundedSol;
+//        }
 
         return prevSol;
     }
@@ -243,7 +271,8 @@ public class Main {
         List<Solution> termMemory = new ArrayList<>();
         int lockCounter = 0;
         while (currentIter < MAX_EVALS){
-            Solution perturbedSolution = perturbation(allNd, currentSol);
+//            Solution perturbedSolution = strongPerturbation(allNd, currentSol);
+            Solution perturbedSolution = weakPerturbation(allNd, currentSol);
             LocalSearchObj localSearchObj = localSearch(perturbedSolution, allNd);
             Solution lsSolution = localSearchObj.getSolution();
 

@@ -1,6 +1,10 @@
 .idea
 *.DS_Store
 
+benchmarks-strong-pert
+benchmarks-weak-pert
+benchmarks
+
 # Compiled class file
 *.class
 
