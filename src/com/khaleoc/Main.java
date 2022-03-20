@@ -8,6 +8,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
@@ -54,7 +55,44 @@ public class Main {
         return currentGraph;
     }
 
-    public static Solution perturbation(Solution inputSolution) {
+    public static Solution perturbation(List<Node> allNd, Solution inputSolution) {
+
+        List<Node> alreadySelected = inputSolution.getSelNodes();
+        List<Node> notSelectedNodes = new ArrayList<>(allNd);
+        notSelectedNodes.removeAll(alreadySelected);
+
+        int max = (int)alreadySelected.size() / 2;
+        int min = 1;
+        int pert_times = (int)Math.floor(Math.random()*(max-min+1)+min);
+
+        if(notSelectedNodes.size() == 0){
+            // Posso solo rimuovere
+            for (int i = 0; i < pert_times; i++){
+                int randomIndex = new Random().nextInt(alreadySelected.size());
+                Node toRem = allNd.get(randomIndex);
+                inputSolution.removeNode(toRem);
+                alreadySelected = inputSolution.getSelNodes();
+                notSelectedNodes = new ArrayList<>(allNd);
+                notSelectedNodes.removeAll(alreadySelected);
+            }
+        } else {
+            // Posso anche aggiungere nodi alla perturbazione
+            for (int i=0; i<pert_times; i++){
+                int randomIndexAdd = new Random().nextInt(notSelectedNodes.size());
+                int randomIndexRem = new Random().nextInt(alreadySelected.size());
+
+                Node toRem = allNd.get(randomIndexRem);
+                Node toAdd = allNd.get(randomIndexAdd);
+                inputSolution.removeNode(toRem);
+                inputSolution.addNode(toAdd);
+
+                alreadySelected = inputSolution.getSelNodes();
+                notSelectedNodes = new ArrayList<>(allNd);
+                notSelectedNodes.removeAll(alreadySelected);
+            }
+
+        }
+
         return inputSolution;
     }
 
@@ -65,7 +103,10 @@ public class Main {
         return toReturn;
     }
 
-    public static Solution criteria(Solution prevSol, Solution currSol){
+    public static Solution criteria(Solution prevSol, Solution newSol){
+        if (prevSol.getTotalCost() > newSol.getTotalCost()){
+            return newSol;
+        }
 
         return prevSol;
     }
@@ -101,8 +142,7 @@ public class Main {
         coordX.add(currentIter);
 
         while (currentIter < MAX_EVALS){
-            System.out.println(currentIter);
-            Solution perturbedSolution = perturbation(currentSol);
+            Solution perturbedSolution = perturbation(allNd, currentSol);
             LocalSearchBean localSearchBean = localSearch(perturbedSolution);
             Solution lsSolution = localSearchBean.getSolution();
 
@@ -120,7 +160,7 @@ public class Main {
         long endTime = System.nanoTime();
         long durationMs = (endTime - startTime) / 1000000;  //divide by 1000000 to get milliseconds.
 
-        System.out.println("Execution time for " + bestSolutionToRet.getInstanceName() + ": " + durationMs);
+        System.out.println("Execution time for " + bestSolutionToRet.getInstanceName() + ": " + durationMs +"\n");
 
         Plot plt = Plot.create();
         plt.plot().add(coordX, coordY, "o-");

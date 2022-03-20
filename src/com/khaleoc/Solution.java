@@ -48,7 +48,7 @@ public class Solution {
             this.calcReachedEdges();
             this.updateCost();
             this.checkValidity();
-        } else throw new RuntimeException("Cannot add a node that is already in selected nodes!");
+        } // else throw new RuntimeException("Cannot add a node that is already in selected nodes!");
 
     }
 
@@ -60,7 +60,7 @@ public class Solution {
             this.calcReachedEdges();
             this.updateCost();
             this.checkValidity();
-        } else throw new RuntimeException("Cannot remove a node that is not in selected nodes!");
+        } // else throw new RuntimeException("Cannot remove a node that is not in selected nodes!");
 
     }
 
@@ -90,5 +90,13 @@ public class Solution {
 
     public int getTotalCost() {
         return totalCost;
+    }
+
+    public List<Node> getSelNodes() {
+        return selNodes;
+    }
+
+    public void setSelNodes(List<Node> selNodes) {
+        this.selNodes = selNodes;
     }
 }
