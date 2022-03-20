@@ -128,8 +128,8 @@ public class Main {
         plt.ylabel("Cost");
         plt.title("Convergence graph for: " + bestSolutionToRet.getInstanceName());
         plt.savefig("benchmarks/convergence_graphs/" + bestSolutionToRet.getInstanceName() +".png");
+        plt.executeSilently();
 
-        System.out.println("AAAA");
     }
 
     public static void main(String[] args) throws IOException, PythonExecutionException {
