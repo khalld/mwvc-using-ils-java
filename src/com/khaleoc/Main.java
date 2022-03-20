@@ -11,7 +11,8 @@ import java.util.stream.Collectors;
 public class Main {
     public static final int MAX_EVALS = 20000;
     public static final String FOLDER_INSTANCES = "wvcp-instances-2";
-    public static final String BENCHMARK_FOLDER = "benchmarks";
+    public static final String BENCHMARK_FOLDER = "benchmarks/";
+    public static final String CONV_GRAPH_FOLDER = "benchmarks/convergence_graphs/";
 
     public static Graph getInstance(String instancePath) throws IOException{
         // The format of all files is as follows: the first line contains the
@@ -187,6 +188,8 @@ public class Main {
         return inputSol;
     }
 
+    
+
     public static IlsObj IteratedLocalSearch(Graph instanceGraph, String instancePath) throws PythonExecutionException, IOException {
         int currentIter = 1;
         int iterBsToRet = 1;
@@ -252,7 +255,7 @@ public class Main {
         plt.xlabel("Iteration");
         plt.ylabel("Cost");
         plt.title("Convergence graph for: " + bestSolutionToRet.getInstanceName());
-        plt.savefig("benchmarks/convergence_graphs/" + bestSolutionToRet.getInstanceName() +".png");
+        plt.savefig(CONV_GRAPH_FOLDER + bestSolutionToRet.getInstanceName() +".png");
         plt.executeSilently();
 
         return toRet;
@@ -284,7 +287,7 @@ public class Main {
 
         // default all fields are enclosed in double quotes
         // default separator is a comma
-        try (CSVWriter writer = new CSVWriter(new FileWriter(BENCHMARK_FOLDER + "/results.csv"))) {
+        try (CSVWriter writer = new CSVWriter(new FileWriter(BENCHMARK_FOLDER + "results.csv"))) {
             writer.writeAll(csvData);
         }
 
