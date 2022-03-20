@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 
 public class Main {
     public static final int MAX_EVALS = 20000;
-    public static final String FOLDER_INSTANCES = "wvcp-instances-2";
+    public static final String FOLDER_INSTANCES = "wvcp-instances-red";
     public static final String BENCHMARK_FOLDER = "benchmarks/";
     public static final String CONV_GRAPH_FOLDER = "benchmarks/convergence_graphs/";
 
@@ -160,10 +160,14 @@ public class Main {
         return toReturn;
     }
 
-    public static Solution acceptanceCriteria(Solution prevSol, Solution newSol){
+    public static Solution acceptanceCriteria(Solution prevSol, Solution newSol, List<Solution> termMemory, int lockCounter){
 
         if (prevSol.getTotalCost() > newSol.getTotalCost()){
             return newSol;
+        } else if (lockCounter % 25 == 0) {
+            int randomIndex = new Random().nextInt(termMemory.size());
+            Solution alreadyFoundedSol = termMemory.get(randomIndex);
+            return alreadyFoundedSol;
         }
 
         return prevSol;
@@ -177,8 +181,13 @@ public class Main {
             List<Node> notSelectedNodes = new ArrayList<>(allAvailableNodes);
             notSelectedNodes.removeAll(alreadySelected);
 
-//            notSelectedNodes.sort(Comparator.comparing(Node::getWeight));
-            notSelectedNodes.sort(Comparator.comparing(Node::getEdgeSize).reversed());
+            int rndVal = (int)Math.floor(Math.random()*(2-1+1)+1);
+
+            if (rndVal == 1){
+                notSelectedNodes.sort(Comparator.comparing(Node::getWeight));
+            } else {
+                notSelectedNodes.sort(Comparator.comparing(Node::getEdgeSize).reversed());
+            }
 
             inputSol.addNode(notSelectedNodes.get(0));
             isComplete = inputSol.isComplete();
@@ -187,8 +196,6 @@ public class Main {
 
         return inputSol;
     }
-
-    
 
     public static IlsObj IteratedLocalSearch(Graph instanceGraph, String instancePath) throws PythonExecutionException, IOException {
         int currentIter = 1;
@@ -216,24 +223,41 @@ public class Main {
         Solution currentSol = new Solution(instancePath, allEdgesOfGraph);
         Solution bestSolutionToRet = new Solution(instancePath, allEdgesOfGraph);
 
-        for (int i=0; i < allNdSize ; i++){
-            currentSol.addNode(allNd.get(i));
-            bestSolutionToRet.addNode(allNd.get(i));
+//        for (int i=0; i < allNdSize; i++){
+//            currentSol.addNode(allNd.get(i));
+//            bestSolutionToRet.addNode(allNd.get(i));
+//        }
+
+//        Same benchmarks like starting with worst solution
+        boolean isComplete = currentSol.isComplete();
+        while (isComplete == false) {
+            int randomIndex = new Random().nextInt(allNd.size());
+            currentSol.addNode(allNd.get(randomIndex));
+            bestSolutionToRet.addNode(allNd.get(randomIndex));
+            isComplete = currentSol.isComplete();
         }
 
         coordY.add(currentSol.getTotalCost());
         coordX.add(currentIter);
 
+        List<Solution> termMemory = new ArrayList<>();
+        int lockCounter = 0;
         while (currentIter < MAX_EVALS){
             Solution perturbedSolution = perturbation(allNd, currentSol);
             LocalSearchObj localSearchObj = localSearch(perturbedSolution, allNd);
             Solution lsSolution = localSearchObj.getSolution();
 
-            currentSol = acceptanceCriteria(lsSolution, currentSol);
+            if (!termMemory.contains(lsSolution)){
+                termMemory.add(lsSolution);
+            }
+
+            currentSol = acceptanceCriteria(lsSolution, currentSol, termMemory, lockCounter);
 
             if (currentSol.getTotalCost() < bestSolutionToRet.getTotalCost()){
                 bestSolutionToRet = currentSol;
                 iterBsToRet = currentIter + localSearchObj.getIteration();
+            } else {
+                lockCounter+=1;
             }
 
             currentIter+= localSearchObj.getIteration();
@@ -262,8 +286,6 @@ public class Main {
     }
 
     public static void main(String[] args) throws IOException, PythonExecutionException {
-        System.out.println("\n\n");
-
         List<String[]> ilsInfo = new ArrayList<>();
 
         // Esecuzione su directory!
@@ -275,7 +297,7 @@ public class Main {
 
                 Graph instGraph = getInstance(listOfFiles[i].toString());
                 IlsObj ilsObj = IteratedLocalSearch(instGraph, listOfFiles[i].getName());
-                String[] ilsRes = {listOfFiles[i].getName().toString(), String.valueOf(ilsObj.getSolution().getTotalCost()), String.valueOf(ilsObj.getIterSolutionFounded()), String.valueOf(ilsObj.getElapsedTime()) };
+                String[] ilsRes = {listOfFiles[i].getName(), String.valueOf(ilsObj.getSolution().getTotalCost()), String.valueOf(ilsObj.getIterSolutionFounded()), String.valueOf(ilsObj.getElapsedTime()) };
                 ilsInfo.add(ilsRes);
             }
             else if (listOfFiles[i].isDirectory()) {
