@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Solution {
-    public List<Node> allNodes;
     public List<Edge> allEdges;
 
     public List<Node> selNodes;
@@ -13,7 +12,6 @@ public class Solution {
     public int totalCost;
     public boolean isComplete;
     public String instanceName;
-    public int numNodes;
 
     public Solution(String instanceName, List<Edge> allEdges) {
         String[] completePath = instanceName.split("/");
@@ -78,10 +76,6 @@ public class Solution {
         // TODO:
     }
 
-    public List<Node> getAllNodes() {
-        return allNodes;
-    }
-
     public String getInstanceName() {
         return instanceName;
     }
@@ -92,5 +86,9 @@ public class Solution {
 
     public boolean isComplete() {
         return isComplete;
+    }
+
+    public int getTotalCost() {
+        return totalCost;
     }
 }

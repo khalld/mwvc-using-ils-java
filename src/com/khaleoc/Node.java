@@ -2,6 +2,7 @@ package com.khaleoc;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 public class Node {
     int id;
@@ -44,6 +45,19 @@ public class Node {
 
     public int getEdgeSize(List<Edge> edgeList){
         return edgeList.size();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Node node = (Node) o;
+        return id == node.id && weight == node.weight && Objects.equals(edgeList, node.edgeList);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, weight, edgeList);
     }
 
     @Override

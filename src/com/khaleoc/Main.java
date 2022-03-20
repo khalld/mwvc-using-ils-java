@@ -8,10 +8,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.Scanner;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class Main {
     public static final int MAX_EVALS = 20000;
@@ -56,17 +54,33 @@ public class Main {
         return currentGraph;
     }
 
+    public static Solution perturbation(Solution inputSolution) {
+        return inputSolution;
+    }
+
+    public static LocalSearchBean localSearch(Solution inputSolution){
+        int iterator = 100;
+        LocalSearchBean toReturn = new LocalSearchBean(inputSolution, iterator);
+
+        return toReturn;
+    }
+
+    public static Solution criteria(Solution prevSol, Solution currSol){
+
+        return prevSol;
+    }
+
     public static void IteratedLocalSearch(Graph instanceGraph, String instancePath) throws PythonExecutionException, IOException {
-        // TODO:
-        int iter = 0;
+        int currentIter = 0;
         long startTime = System.nanoTime();
 
-        List<Integer> coordY = new ArrayList<>();
-        List<Integer> coordX = new ArrayList<>();
+        final List<Integer> coordY = new ArrayList<>();
+        final List<Integer> coordX = new ArrayList<>();
 
-        List<Node> allNd = instanceGraph.getNodes();
+        final List<Node> allNd = instanceGraph.getNodes();
         int allNdSize = allNd.size();
-        List<Edge> allEdgesOfGraph = new ArrayList<>();
+//        estraggo tutti gli edge del grafo
+        final List<Edge> allEdgesOfGraph = new ArrayList<>();
         for (int i = 0; i<allNdSize; i++){
             List<Edge> currentEdgeList = allNd.get(i).getEdgeList();
             int currEdgeListSize = currentEdgeList.size();
@@ -75,17 +89,30 @@ public class Main {
             }
         }
 
-        Solution worstSolution = new Solution(instancePath, allEdgesOfGraph);
+        Solution currentSol = new Solution(instancePath, allEdgesOfGraph);
+        Solution bestSolutionToRet = new Solution(instancePath, allEdgesOfGraph);
 
         for (int i=0; i < allNdSize ; i++){
-            worstSolution.addNode(allNd.get(i));
+            currentSol.addNode(allNd.get(i));
+            bestSolutionToRet.addNode(allNd.get(i));
         }
-        int totCostTemp = 1000;
-        while (iter < MAX_EVALS){
-            iter+=100;
-            totCostTemp-=10;
-            coordY.add(totCostTemp);
-            coordX.add(iter);
+
+        coordY.add(currentSol.getTotalCost());
+        coordX.add(currentIter);
+
+        while (currentIter < MAX_EVALS){
+            System.out.println(currentIter);
+            Solution perturbedSolution = perturbation(currentSol);
+            LocalSearchBean localSearchBean = localSearch(perturbedSolution);
+            Solution lsSolution = localSearchBean.getSolution();
+
+            currentSol = criteria(lsSolution, currentSol);
+
+            currentIter+= localSearchBean.getIteration();
+
+            coordY.add(currentSol.getTotalCost());
+            coordX.add(currentIter);
+
         }
 
 
@@ -93,18 +120,20 @@ public class Main {
         long endTime = System.nanoTime();
         long durationMs = (endTime - startTime) / 1000000;  //divide by 1000000 to get milliseconds.
 
-        System.out.println("Execution time for " + worstSolution.getInstanceName() + ": " + durationMs);
+        System.out.println("Execution time for " + bestSolutionToRet.getInstanceName() + ": " + durationMs);
 
         Plot plt = Plot.create();
         plt.plot().add(coordX, coordY, "o-");
         plt.xlabel("Iteration");
         plt.ylabel("Cost");
-        plt.title("Convergence graph for: " + worstSolution.getInstanceName());
-        plt.savefig("benchmarks/convergence_graphs/" + worstSolution.getInstanceName() );
+        plt.title("Convergence graph for: " + bestSolutionToRet.getInstanceName());
+        plt.savefig("benchmarks/convergence_graphs/" + bestSolutionToRet.getInstanceName() +".png");
 
+        System.out.println("AAAA");
     }
 
     public static void main(String[] args) throws IOException, PythonExecutionException {
+        System.out.println("\n\n");
 
         String instancePath = "wvcp-instances/vc_20_60_01.txt";
         Graph instGraph = getInstance(instancePath);
