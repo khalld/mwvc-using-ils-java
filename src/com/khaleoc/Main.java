@@ -2,15 +2,16 @@ package com.khaleoc;
 
 import com.github.sh0nk.matplotlib4j.Plot;
 import com.github.sh0nk.matplotlib4j.PythonExecutionException;
+import com.opencsv.CSVWriter;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class Main {
     public static final int MAX_EVALS = 20000;
+    public static final String FOLDER_INSTANCES = "wvcp-instances-2";
+    public static final String BENCHMARK_FOLDER = "benchmarks";
 
     public static Graph getInstance(String instancePath) throws IOException{
         // The format of all files is as follows: the first line contains the
@@ -98,7 +99,7 @@ public class Main {
         return inputSolutionChecked;
     }
 
-    public static LocalSearchBean localSearch(Solution inputSolution, List<Node> allNd){
+    public static LocalSearchObj localSearch(Solution inputSolution, List<Node> allNd){
         int iterator = 0;
 
         List<Node> alreadySelected = inputSolution.getSelNodes();
@@ -153,7 +154,7 @@ public class Main {
         }
 
         Solution inputSolChecked = completeSol(inputSolution, allNd);
-        LocalSearchBean toReturn = new LocalSearchBean(inputSolChecked, iterator);
+        LocalSearchObj toReturn = new LocalSearchObj(inputSolChecked, iterator);
 
         return toReturn;
     }
@@ -186,8 +187,9 @@ public class Main {
         return inputSol;
     }
 
-    public static void IteratedLocalSearch(Graph instanceGraph, String instancePath) throws PythonExecutionException, IOException {
-        int currentIter = 0;
+    public static IlsObj IteratedLocalSearch(Graph instanceGraph, String instancePath) throws PythonExecutionException, IOException {
+        int currentIter = 1;
+        int iterBsToRet = 1;
         long startTime = System.nanoTime();
 
         final List<Integer> coordY = new ArrayList<>();
@@ -221,12 +223,17 @@ public class Main {
 
         while (currentIter < MAX_EVALS){
             Solution perturbedSolution = perturbation(allNd, currentSol);
-            LocalSearchBean localSearchBean = localSearch(perturbedSolution, allNd);
-            Solution lsSolution = localSearchBean.getSolution();
+            LocalSearchObj localSearchObj = localSearch(perturbedSolution, allNd);
+            Solution lsSolution = localSearchObj.getSolution();
 
             currentSol = acceptanceCriteria(lsSolution, currentSol);
 
-            currentIter+= localSearchBean.getIteration();
+            if (currentSol.getTotalCost() < bestSolutionToRet.getTotalCost()){
+                bestSolutionToRet = currentSol;
+                iterBsToRet = currentIter + localSearchObj.getIteration();
+            }
+
+            currentIter+= localSearchObj.getIteration();
 
             coordY.add(currentSol.getTotalCost());
             coordX.add(currentIter);
@@ -235,6 +242,8 @@ public class Main {
 
         long endTime = System.nanoTime();
         long durationMs = (endTime - startTime) / 1000000;  //divide by 1000000 to get milliseconds.
+
+        IlsObj toRet = new IlsObj(bestSolutionToRet, iterBsToRet, durationMs);
 
         System.out.println("Execution time for " + bestSolutionToRet.getInstanceName() + ": " + durationMs +" ms\n");
 
@@ -246,17 +255,53 @@ public class Main {
         plt.savefig("benchmarks/convergence_graphs/" + bestSolutionToRet.getInstanceName() +".png");
         plt.executeSilently();
 
+        return toRet;
     }
 
     public static void main(String[] args) throws IOException, PythonExecutionException {
         System.out.println("\n\n");
 
-        String instancePath = "wvcp-instances/vc_800_10000.txt";
-        Graph instGraph = getInstance(instancePath);
-//        instGraph.printInfo();
+        List<String[]> ilsInfo = new ArrayList<>();
 
-        IteratedLocalSearch(instGraph, instancePath);
+        // Esecuzione su directory!
+        File folder = new File(FOLDER_INSTANCES);
+        File[] listOfFiles = folder.listFiles((dir, name) -> !name.equals(".DS_Store"));
+        for (int i = 0; i < listOfFiles.length; i++) {
+            if (listOfFiles[i].isFile()) {
+                System.out.println("Executing ILS on: " + listOfFiles[i].getName());
+
+                Graph instGraph = getInstance(listOfFiles[i].toString());
+                IlsObj ilsObj = IteratedLocalSearch(instGraph, listOfFiles[i].getName());
+                String[] ilsRes = {listOfFiles[i].getName().toString(), String.valueOf(ilsObj.getSolution().getTotalCost()), String.valueOf(ilsObj.getIterSolutionFounded()), String.valueOf(ilsObj.getElapsedTime()) };
+                ilsInfo.add(ilsRes);
+            }
+            else if (listOfFiles[i].isDirectory()) {
+                System.out.println("Directory " + listOfFiles[i].getName());
+            }
+        }
+
+        List<String[]> csvData = createCsv(ilsInfo);
+
+        // default all fields are enclosed in double quotes
+        // default separator is a comma
+        try (CSVWriter writer = new CSVWriter(new FileWriter(BENCHMARK_FOLDER + "/results.csv"))) {
+            writer.writeAll(csvData);
+        }
 
 
+    }
+
+    private static List<String[]> createCsv(List<String[]> records) {
+        String[] header = {"instance", "best solution", "best solution iter", "elapsed ms"};
+
+        List<String[]> list = new ArrayList<>();
+        list.add(header);
+
+        for (int i = 0; i < records.size(); i++){
+            String[] current = records.get(i);
+            list.add(current);
+        }
+
+        return list;
     }
 }

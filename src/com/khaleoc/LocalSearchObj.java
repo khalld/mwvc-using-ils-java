@@ -1,10 +1,10 @@
 package com.khaleoc;
 
-public class LocalSearchBean {
+public class LocalSearchObj {
     public Solution solution;
     public int iteration;
 
-    public LocalSearchBean(Solution solution, int iteration) {
+    public LocalSearchObj(Solution solution, int iteration) {
         this.solution = solution;
         this.iteration = iteration;
     }

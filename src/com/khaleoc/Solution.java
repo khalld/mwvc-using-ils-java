@@ -5,6 +5,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 
 public class Solution {
@@ -18,9 +19,9 @@ public class Solution {
     public String instanceName;
 
     public Solution(String instanceName, List<Edge> allEdges) {
-        String[] completePath = instanceName.split("/");
-        String instanceFile = completePath[1].replace(".txt", "");
-        this.instanceName = instanceFile;
+//        String[] completePath = instanceName.split("/");
+//        String instanceFile = completePath[1].replace(".txt", "");
+        this.instanceName = instanceName.replace(".txt", "");;
 
         this.allEdges = allEdges;
 
@@ -99,4 +100,16 @@ public class Solution {
         return selNodes;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Solution solution = (Solution) o;
+        return totalCost == solution.totalCost && isComplete == solution.isComplete && Objects.equals(allEdges, solution.allEdges) && Objects.equals(selNodes, solution.selNodes) && Objects.equals(reachedEdges, solution.reachedEdges) && Objects.equals(instanceName, solution.instanceName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(allEdges, selNodes, reachedEdges, totalCost, isComplete, instanceName);
+    }
 }
