@@ -6,10 +6,7 @@ import com.github.sh0nk.matplotlib4j.PythonExecutionException;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.Scanner;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Main {
@@ -47,7 +44,10 @@ public class Main {
         for (int i = 0; i < adjMatrix.size(); i++){
             for (int j = 0; j < adjMatrix.get(i).size(); j++){
                 if(adjMatrix.get(i).get(j) == 1){
-                    currentGraph.addEdge(i,j);
+//                  Evito di controllare manualmente di edge
+                    if (i < j){
+                        currentGraph.addEdge(i,j);
+                    }
                 }
             }
         }
@@ -104,11 +104,30 @@ public class Main {
     }
 
     public static Solution criteria(Solution prevSol, Solution newSol){
+
         if (prevSol.getTotalCost() > newSol.getTotalCost()){
             return newSol;
         }
 
         return prevSol;
+    }
+
+    public static Solution completeSol(Solution inputSol, List<Node> allAvailableNodes){
+        boolean isComplete = inputSol.isComplete();
+
+        while (isComplete == false) {
+            List<Node> alreadySelected = inputSol.getSelNodes();
+            List<Node> notSelectedNodes = new ArrayList<>(allAvailableNodes);
+            notSelectedNodes.removeAll(alreadySelected);
+
+            notSelectedNodes.sort(Comparator.comparing(Node::getWeight));
+
+            inputSol.addNode(notSelectedNodes.get(0));
+            isComplete = inputSol.isComplete();
+
+        }
+
+        return inputSol;
     }
 
     public static void IteratedLocalSearch(Graph instanceGraph, String instancePath) throws PythonExecutionException, IOException {
@@ -126,7 +145,10 @@ public class Main {
             List<Edge> currentEdgeList = allNd.get(i).getEdgeList();
             int currEdgeListSize = currentEdgeList.size();
             for (int j = 0; j < currEdgeListSize; j++){
-                allEdgesOfGraph.add(currentEdgeList.get(j));
+                if (! allEdgesOfGraph.contains(currentEdgeList.get(j))){
+                    allEdgesOfGraph.add(currentEdgeList.get(j));
+                }
+
             }
         }
 
@@ -143,7 +165,9 @@ public class Main {
 
         while (currentIter < MAX_EVALS){
             Solution perturbedSolution = perturbation(allNd, currentSol);
-            LocalSearchBean localSearchBean = localSearch(perturbedSolution);
+            // TODO:
+            Solution perturbedSolutionComplete = completeSol(perturbedSolution, allNd);
+            LocalSearchBean localSearchBean = localSearch(perturbedSolutionComplete);
             Solution lsSolution = localSearchBean.getSolution();
 
             currentSol = criteria(lsSolution, currentSol);

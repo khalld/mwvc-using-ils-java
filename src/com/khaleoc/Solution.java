@@ -1,7 +1,11 @@
 package com.khaleoc;
 
+import org.apache.commons.collections4.CollectionUtils;
+
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+
 
 public class Solution {
     public List<Edge> allEdges;
@@ -34,7 +38,9 @@ public class Solution {
             List<Edge> currentEdgeList = this.selNodes.get(i).getEdgeList();
             int currEdgeListSize = currentEdgeList.size();
             for (int j = 0; j < currEdgeListSize; j++){
-                this.reachedEdges.add(currentEdgeList.get(j));
+                if(! this.reachedEdges.contains(currentEdgeList.get(j))) {
+                    this.reachedEdges.add(currentEdgeList.get(j));
+                }
             }
         }
     }
@@ -72,15 +78,12 @@ public class Solution {
         }
     }
 
-    public void make_xml(){
-        // TODO:
-    }
-
     public String getInstanceName() {
         return instanceName;
     }
 
     public void checkValidity(){
+        this.reachedEdges.sort(Comparator.comparing(Edge::getSource));
         this.isComplete = this.reachedEdges.equals(this.allEdges);
     }
 
@@ -96,7 +99,4 @@ public class Solution {
         return selNodes;
     }
 
-    public void setSelNodes(List<Node> selNodes) {
-        this.selNodes = selNodes;
-    }
 }
