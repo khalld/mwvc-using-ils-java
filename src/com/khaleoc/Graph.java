@@ -48,7 +48,7 @@ public class Graph {
             }
             totEdges += currenEdgeList.size();
         }
-        System.out.println("Edges totali " + totEdges);
+        System.out.println("Edges totali " + totEdges / 2);
         System.out.println("Peso totale " + totalWeight);
 
     }

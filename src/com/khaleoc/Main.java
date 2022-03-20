@@ -56,12 +56,30 @@ public class Main {
         return currentGraph;
     }
 
-    public static void IteratedLocalSearch(Solution solution) throws PythonExecutionException, IOException {
+    public static void IteratedLocalSearch(Graph instanceGraph, String instancePath) throws PythonExecutionException, IOException {
         // TODO:
         int iter = 0;
+        long startTime = System.nanoTime();
+
         List<Integer> coordY = new ArrayList<>();
         List<Integer> coordX = new ArrayList<>();
 
+        List<Node> allNd = instanceGraph.getNodes();
+        int allNdSize = allNd.size();
+        List<Edge> allEdgesOfGraph = new ArrayList<>();
+        for (int i = 0; i<allNdSize; i++){
+            List<Edge> currentEdgeList = allNd.get(i).getEdgeList();
+            int currEdgeListSize = currentEdgeList.size();
+            for (int j = 0; j < currEdgeListSize; j++){
+                allEdgesOfGraph.add(currentEdgeList.get(j));
+            }
+        }
+
+        Solution worstSolution = new Solution(instancePath, allEdgesOfGraph);
+
+        for (int i=0; i < allNdSize ; i++){
+            worstSolution.addNode(allNd.get(i));
+        }
         int totCostTemp = 1000;
         while (iter < MAX_EVALS){
             iter+=100;
@@ -70,24 +88,30 @@ public class Main {
             coordX.add(iter);
         }
 
+
+
+        long endTime = System.nanoTime();
+        long durationMs = (endTime - startTime) / 1000000;  //divide by 1000000 to get milliseconds.
+
+        System.out.println("Execution time for " + worstSolution.getInstanceName() + ": " + durationMs);
+
         Plot plt = Plot.create();
         plt.plot().add(coordX, coordY, "o-");
         plt.xlabel("Iteration");
         plt.ylabel("Cost");
-        plt.title("Convergence graph for: " + solution.getInstanceName());
-        plt.savefig("benchmarks/convergence_graphs/" + solution.getInstanceName() );
+        plt.title("Convergence graph for: " + worstSolution.getInstanceName());
+        plt.savefig("benchmarks/convergence_graphs/" + worstSolution.getInstanceName() );
 
     }
 
     public static void main(String[] args) throws IOException, PythonExecutionException {
 
-        String instancePath = "wvcp-instances/SPI/1/vc_20_60_01.txt";
+        String instancePath = "wvcp-instances/vc_20_60_01.txt";
         Graph instGraph = getInstance(instancePath);
-        List<Node> allNd = instGraph.getNodes();
-        Solution worstSolution = new Solution(instancePath, allNd);
-        IteratedLocalSearch(worstSolution);
-
 //        instGraph.printInfo();
+
+        IteratedLocalSearch(instGraph, instancePath);
+
 
     }
 }
