@@ -65,4 +65,8 @@ public class Graph {
         }
         return s.toString();
     }
+
+    public List<Node> getNodes() {
+        return nodes;
+    }
 }

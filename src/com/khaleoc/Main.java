@@ -1,14 +1,20 @@
 package com.khaleoc;
 
+import com.github.sh0nk.matplotlib4j.Plot;
+import com.github.sh0nk.matplotlib4j.PythonExecutionException;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class Main {
+    public static final int MAX_EVALS = 20000;
 
     public static Graph getInstance(String instancePath) throws IOException{
         // The format of all files is as follows: the first line contains the
@@ -50,12 +56,38 @@ public class Main {
         return currentGraph;
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void IteratedLocalSearch(Solution solution) throws PythonExecutionException, IOException {
+        // TODO:
+        int iter = 0;
+        List<Integer> coordY = new ArrayList<>();
+        List<Integer> coordX = new ArrayList<>();
+
+        int totCostTemp = 1000;
+        while (iter < MAX_EVALS){
+            iter+=100;
+            totCostTemp-=10;
+            coordY.add(totCostTemp);
+            coordX.add(iter);
+        }
+
+        Plot plt = Plot.create();
+        plt.plot().add(coordX, coordY, "o-");
+        plt.xlabel("Iteration");
+        plt.ylabel("Cost");
+        plt.title("Convergence graph for: " + solution.getInstanceName());
+        plt.savefig("benchmarks/convergence_graphs/" + solution.getInstanceName() );
+
+    }
+
+    public static void main(String[] args) throws IOException, PythonExecutionException {
 
         String instancePath = "wvcp-instances/SPI/1/vc_20_60_01.txt";
         Graph instGraph = getInstance(instancePath);
+        List<Node> allNd = instGraph.getNodes();
+        Solution worstSolution = new Solution(instancePath, allNd);
+        IteratedLocalSearch(worstSolution);
 
-        instGraph.printInfo();
+//        instGraph.printInfo();
 
     }
 }
