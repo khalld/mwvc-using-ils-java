@@ -61,8 +61,7 @@ public class Main2 {
         }
     }
 
-    static boolean checkValidity(ArrayList<Edge> allEdges, ArrayList<Edge> selected, List<Node> allNd){
-
+    static ArrayList<Edge> getNotFoundedEdge(ArrayList<Edge> allEdges, ArrayList<Edge> selected, List<Node> allNd){
         ArrayList<Edge> allEdgesFounded = new ArrayList<>();
         for (int i = 0; i < selected.size(); i++){
             Edge currentEdge = selected.get(i);
@@ -91,17 +90,19 @@ public class Main2 {
             }
         }
 
-        // TODO: Fixa per LPI
-//        if (notFounded.size() > 0 ){
-//            ArrayList<Node> undiscovered = new ArrayList<>();
-//            for (int i = 0; i < notFounded.size(); i++){
-//
-//            }
-//        }
+        return notFounded;
+    }
 
-        if (notFounded.size() > 0){
-            return false;
-        }
+
+    // FIXME:
+    static boolean checkValidity(ArrayList<Edge> allEdges, ArrayList<Edge> selected, List<Node> allNd){
+        ArrayList<Edge> notFounded = getNotFoundedEdge(allEdges, selected, allNd);
+
+//        while (notFounded.size() == 0 ){
+            // TODO: trova tra i nodi non selezionati quello mancante ed aggiungi quello con minore costo
+//            selected.add(notFounded.get(0));
+//            notFounded = getNotFoundedEdge(allEdges, selected, allNd);
+//        }
 
         return true;
     }
@@ -190,25 +191,16 @@ public class Main2 {
         return currentGraph;
     }
 
-    public static Solution2 weakPerturbation(List<Vertex> allNd, Solution2 inputSolution) {
+    public static Solution2 weakPerturbation(List<Edge> allEdgesOfGraph, List<Vertex> allNd, Solution2 inputSolution) {
         List<Vertex> alreadySelected = inputSolution.getSelectedVertex();
         List<Vertex> notSelectedNodes = new ArrayList<>(allNd);
         notSelectedNodes.removeAll(alreadySelected);
 
-//        if(notSelectedNodes.size() == 0){
-            // Posso solo rimuovere
-            int randomIndex = new Random().nextInt(alreadySelected.size());
-            Vertex toRem = allNd.get(randomIndex);
-            inputSolution.removeVertex(toRem);
-//        } else {
-//            // Posso anche aggiungere nodi alla perturbazione
-//            int randomIndexAdd = new Random().nextInt(notSelectedNodes.size());
-//            int randomIndexRem = new Random().nextInt(alreadySelected.size());
-//            Vertex toRem = allNd.get(randomIndexRem);
-//            Vertex toAdd = allNd.get(randomIndexAdd);
-//            inputSolution.removeVertex(toRem);
-//            inputSolution.addVertex(toAdd);
-//        }
+        int randomIndex = new Random().nextInt(alreadySelected.size());
+        Vertex toRem = allNd.get(randomIndex);
+        inputSolution.removeVertex(toRem);
+
+        // TODO Checkvalidity
 
         return inputSolution;
     }
@@ -223,7 +215,7 @@ public class Main2 {
     }
 
     public static LocalSearchObj2 localSearch(Solution2 inputSolution, List<Node> allNd){
-        int iterator = 10000; // FIXME
+        int iterator = 1000; // FIXME
 
         LocalSearchObj2 toReturn = new LocalSearchObj2(inputSolution, iterator);
 
@@ -264,7 +256,7 @@ public class Main2 {
         while (currentIter < MAX_EVALS){
 
             // TODO: perturbation
-            Solution2 perturbedSolution = weakPerturbation(allVertices, currentSol);
+            Solution2 perturbedSolution = weakPerturbation(allEdgesOfGraph, allVertices, currentSol);
 
             // Controlla completezza sol.
 
@@ -302,7 +294,7 @@ public class Main2 {
     public static void main(String[] args) throws Exception {
 
         // TODO: Copia tutto da main 1
-        Graph instGraph = getInstance("wvcp-instances/vc_20_60_07.txt");
+        Graph instGraph = getInstance("wvcp-instances/vc_200_3000_05.txt");
 
         IteratedLocalSearch(instGraph, "temp");
 
