@@ -18,11 +18,13 @@ public class Main2 {
         int id;
         int weight;
         boolean explored;
+        List<Edge> adjList;
 
-        public Vertex(int id, int weight) {
+        public Vertex(int id, int weight, List<Edge> adjList) {
             this.id = id;
             this.weight = weight;
             this.explored = false;
+            this.adjList = adjList;
         }
 
         public boolean isExplored() {
@@ -41,6 +43,10 @@ public class Main2 {
             return weight;
         }
 
+        public List<Edge> getAdjList() {
+            return adjList;
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -53,10 +59,6 @@ public class Main2 {
         public int hashCode() {
             return Objects.hash(id, weight);
         }
-    }
-
-    static class Solution{
-
     }
 
     static boolean checkValidity(ArrayList<Edge> allEdges, ArrayList<Edge> selected, List<Node> allNd){
@@ -188,8 +190,48 @@ public class Main2 {
         return currentGraph;
     }
 
+    public static Solution2 weakPerturbation(List<Vertex> allNd, Solution2 inputSolution) {
+        List<Vertex> alreadySelected = inputSolution.getSelectedVertex();
+        List<Vertex> notSelectedNodes = new ArrayList<>(allNd);
+        notSelectedNodes.removeAll(alreadySelected);
+
+//        if(notSelectedNodes.size() == 0){
+            // Posso solo rimuovere
+            int randomIndex = new Random().nextInt(alreadySelected.size());
+            Vertex toRem = allNd.get(randomIndex);
+            inputSolution.removeVertex(toRem);
+//        } else {
+//            // Posso anche aggiungere nodi alla perturbazione
+//            int randomIndexAdd = new Random().nextInt(notSelectedNodes.size());
+//            int randomIndexRem = new Random().nextInt(alreadySelected.size());
+//            Vertex toRem = allNd.get(randomIndexRem);
+//            Vertex toAdd = allNd.get(randomIndexAdd);
+//            inputSolution.removeVertex(toRem);
+//            inputSolution.addVertex(toAdd);
+//        }
+
+        return inputSolution;
+    }
+
+    public static Solution2 acceptanceCriteria(Solution2 prevSol, Solution2 newSol){
+
+        if (prevSol.getCost() > newSol.getCost()){
+            return newSol;
+        }
+
+        return prevSol;
+    }
+
+    public static LocalSearchObj2 localSearch(Solution2 inputSolution, List<Node> allNd){
+        int iterator = 10000; // FIXME
+
+        LocalSearchObj2 toReturn = new LocalSearchObj2(inputSolution, iterator);
+
+        return toReturn;
+    }
+
     public static IlsObj IteratedLocalSearch(Graph instanceGraph, String instancePath) throws Exception {
-        int currentIter = MAX_EVALS;
+        int currentIter = 1;
         int iterBsToRet = 1;
         long startTime = System.nanoTime();
 
@@ -210,7 +252,7 @@ public class Main2 {
         ArrayList<Vertex> allVertices = new ArrayList<>();
 
         for (int i=0; i< allNd.size(); i++){
-            allVertices.add(new Vertex(i, allNd.get(i).getWeight()));
+            allVertices.add(new Vertex(i, allNd.get(i).getWeight(), allNd.get(i).getEdgeList()));
         }
 
         Solution2 currentSol = getInitialSolution(allEdgesOfGraph, allVertices, allNd);
@@ -221,11 +263,20 @@ public class Main2 {
 
         while (currentIter < MAX_EVALS){
 
+            // TODO: perturbation
+            Solution2 perturbedSolution = weakPerturbation(allVertices, currentSol);
 
+            // Controlla completezza sol.
 
+            // TODO: localSearch
+            LocalSearchObj2 lsSol = localSearch(perturbedSolution, allNd);
 
-//            coordY.add(currentSol.getTotalCost());
-//            coordX.add(currentIter);
+            // TODO: Miglioralo
+            currentSol = acceptanceCriteria(perturbedSolution, perturbedSolution);
+
+            currentIter+=lsSol.getIteration();
+            coordY.add(currentSol.getCost());
+            coordX.add(currentIter);
 
         }
 
