@@ -29,6 +29,14 @@ public class Main2 {
             this.explored = explored;
         }
 
+        public int getId() {
+            return id;
+        }
+
+        public int getWeight() {
+            return weight;
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -88,50 +96,45 @@ public class Main2 {
         return true;
     }
 
-    public static void findMinimumWeightedVertexCoverApprox(ArrayList<Edge> graph, int[] weights, List<Node> allNd) throws Exception {
+    public static void getInitialSolution(ArrayList<Edge> graph, int[] weights, List<Node> allNd) throws Exception {
 
         ArrayList<Vertex> allVertices = new ArrayList<>();
         for(int i=0; i<weights.length; i++){
             allVertices.add(new Vertex(i, weights[i]));
         }
 
-        int[] remainingWeights = Arrays.copyOf(weights, weights.length);
-
         ArrayList<Vertex> selectedVertex = new ArrayList<>();
         ArrayList<Edge> selectedEges = new ArrayList<>();
         int totalWeight = 0;
 
         for(Edge edge : graph){
-            int fromVertex = edge.source;
-            int toVertex = edge.dest;
-            if(remainingWeights[fromVertex]==0 || remainingWeights[toVertex]==0){	// skippa gli edge se sono stati già selezionati
+            Vertex fromVertex = allVertices.get(edge.source);
+            Vertex toVertex = allVertices.get(edge.dest);
+
+            if(fromVertex.isExplored() == true || toVertex.isExplored() == true){
                 continue;
             }
 
-            if(remainingWeights[fromVertex] < remainingWeights[toVertex]){
-                int smallerWeight = remainingWeights[fromVertex];
-                remainingWeights[fromVertex] = 0;	// 1 il vertice è già stato esplorato
-                remainingWeights[toVertex] -= smallerWeight;
-                totalWeight += weights[fromVertex];
-                selectedVertex.add(allVertices.get(fromVertex));
-                selectedEges.add(edge);
+            if(fromVertex.getWeight() < toVertex.getWeight()){
+                    fromVertex.setExplored(true);
+                    totalWeight += fromVertex.getWeight();
+                    selectedVertex.add(fromVertex);
+                    selectedEges.add(edge);
+                }
+                else{
+                    toVertex.setExplored(true);
+                    totalWeight += toVertex.getWeight();
+                    selectedVertex.add(toVertex);
+                    selectedEges.add(edge);
+                }
             }
-            else{
-                int smallerWeight = remainingWeights[toVertex];
-                remainingWeights[toVertex] = 0;		// vertice già esplorato
-                remainingWeights[fromVertex] -= smallerWeight;
-                totalWeight += weights[toVertex];
-                selectedVertex.add(allVertices.get(toVertex));
-                selectedEges.add(edge);
-            }
-        }
 
         boolean validity = checkValidity(graph, selectedEges, allNd);
-
+//
         if (validity == false){
             throw new Exception("Cannot return a solution not valid!");
         }
-
+//
         System.out.println("Total Weight: "+totalWeight);
     }
 
@@ -179,7 +182,7 @@ public class Main2 {
     }
 
     public static void main(String[] args) throws Exception {
-        Graph instGraph = getInstance("wvcp-instances/vc_20_60_01.txt");
+        Graph instGraph = getInstance("wvcp-instances/vc_200_3000_04.txt");
 
         final List<Node> allNd = instGraph.getNodes();
         int graphDim = allNd.size();
@@ -198,7 +201,7 @@ public class Main2 {
             weights[i] = allNd.get(i).getWeight();
         }
 
-        findMinimumWeightedVertexCoverApprox(allEdgesOfGraph, weights, allNd);
+        getInitialSolution(allEdgesOfGraph, weights, allNd);
 
         System.out.println("AAAA");
     }
