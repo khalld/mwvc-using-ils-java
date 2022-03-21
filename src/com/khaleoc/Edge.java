@@ -33,7 +33,7 @@ public class Edge {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Edge edge = (Edge) o;
-        return source == edge.source && dest == edge.dest || source == edge.dest && dest == edge.source;
+        return source == edge.source && dest == edge.dest;
     }
 
     @Override

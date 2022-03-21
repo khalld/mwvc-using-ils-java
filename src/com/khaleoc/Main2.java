@@ -13,79 +13,127 @@ public class Main2 {
     static class Vertex{
         int id;
         int weight;
+        boolean explored;
 
         public Vertex(int id, int weight) {
             this.id = id;
             this.weight = weight;
+            this.explored = false;
+        }
+
+        public boolean isExplored() {
+            return explored;
+        }
+
+        public void setExplored(boolean explored) {
+            this.explored = explored;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Vertex vertex = (Vertex) o;
+            return id == vertex.id && weight == vertex.weight;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(id, weight);
         }
     }
 
-    static class SimpleSolution{
-        ArrayList<String> selectedVertex;
-        int totalWeight;
+    static boolean checkValidity(ArrayList<Edge> allEdges, ArrayList<Edge> selected, List<Node> allNd){
 
-        public SimpleSolution(ArrayList<String> selectedVertex, int totalWeight) {
-            this.selectedVertex = selectedVertex;
-            this.totalWeight = totalWeight;
+        ArrayList<Edge> allEdgesFounded = new ArrayList<>();
+        for (int i = 0; i < selected.size(); i++){
+            Edge currentEdge = selected.get(i);
+            Node from = allNd.get(currentEdge.getSource());
+
+            for (int j = 0; j < from.getEdgeList().size(); j++){
+                if(!allEdgesFounded.contains(from.getEdgeList().get(j))){
+                    allEdgesFounded.add(from.getEdgeList().get(j));
+                }
+            }
+
+            Node dest = allNd.get(currentEdge.getDest());
+
+            for (int j = 0; j < dest.getEdgeList().size(); j++){
+                if(!allEdgesFounded.contains(dest.getEdgeList().get(j))){
+                    allEdgesFounded.add(dest.getEdgeList().get(j));
+                }
+            }
+
         }
 
+        ArrayList<Edge> notFounded = new ArrayList<>();
+        for (Edge e : allEdges) {
+            if (!allEdgesFounded.contains(e)) {
+                notFounded.add(e);
+            }
+        }
+
+        // TODO: Fixa per LPI
+//        if (notFounded.size() > 0 ){
+//            ArrayList<Node> undiscovered = new ArrayList<>();
+//            for (int i = 0; i < notFounded.size(); i++){
+//
+//            }
+//        }
+
+        if (notFounded.size() > 0){
+            return false;
+        }
+
+        return true;
     }
 
-    public static void findMinimumWeightedVertexCoverApprox(List<Edge> graph, List<Node> allNodes, int[] weights){
-        //Build String array of integer vertex names if no string names are provided
-        String[] integerNames = new String[weights.length];
-        List<Vertex> vertices = new ArrayList<>();
+    public static void findMinimumWeightedVertexCoverApprox(ArrayList<Edge> graph, int[] weights, List<Node> allNd) throws Exception {
+
+        ArrayList<Vertex> allVertices = new ArrayList<>();
         for(int i=0; i<weights.length; i++){
-            vertices.add(new Vertex(i, weights[i]));
-            integerNames[i] = i+"";
+            allVertices.add(new Vertex(i, weights[i]));
         }
-        findMinimumWeightedVertexCoverApprox(graph, weights, allNodes, integerNames);
-    }
 
-    public static SimpleSolution findMinimumWeightedVertexCoverApprox(List<Edge> graph, int[] weights, List<Node> allNodes,  String[] vertexNames){
         int[] remainingWeights = Arrays.copyOf(weights, weights.length);
 
-        ArrayList<String> vertexCoverNodes = new ArrayList<String>();
-        List<Edge> selectedEges = new ArrayList<>();
-        List<Node> selectedNodes = new ArrayList<>();
+        ArrayList<Vertex> selectedVertex = new ArrayList<>();
+        ArrayList<Edge> selectedEges = new ArrayList<>();
         int totalWeight = 0;
 
         for(Edge edge : graph){
             int fromVertex = edge.source;
             int toVertex = edge.dest;
-            if(remainingWeights[fromVertex]==0 || remainingWeights[toVertex]==0){		//skip edges if either vertex is already tight
+            if(remainingWeights[fromVertex]==0 || remainingWeights[toVertex]==0){	// skippa gli edge se sono stati già selezionati
                 continue;
             }
 
-            if(remainingWeights[fromVertex] < remainingWeights[toVertex]){		//fromVertex weight is smaller
+            if(remainingWeights[fromVertex] < remainingWeights[toVertex]){
                 int smallerWeight = remainingWeights[fromVertex];
-                remainingWeights[fromVertex] = 0;	//1 vertex becomes tight (greedy)
+                remainingWeights[fromVertex] = 0;	// 1 il vertice è già stato esplorato
                 remainingWeights[toVertex] -= smallerWeight;
                 totalWeight += weights[fromVertex];
-                vertexCoverNodes.add(vertexNames[fromVertex]);
-                selectedNodes.add(allNodes.get(fromVertex));
+                selectedVertex.add(allVertices.get(fromVertex));
                 selectedEges.add(edge);
             }
-            else{		//toVertex weight is smaller or they're equal
+            else{
                 int smallerWeight = remainingWeights[toVertex];
-                remainingWeights[toVertex] = 0;		//1 vertex becomes tight (greedy)
+                remainingWeights[toVertex] = 0;		// vertice già esplorato
                 remainingWeights[fromVertex] -= smallerWeight;
                 totalWeight += weights[toVertex];
-                vertexCoverNodes.add(vertexNames[toVertex]);
-                selectedNodes.add(allNodes.get(fromVertex));
+                selectedVertex.add(allVertices.get(toVertex));
                 selectedEges.add(edge);
-
             }
-//            System.out.println("Chose Edge "+edge);
         }
 
-        SimpleSolution sol = new SimpleSolution(graph, vertexCoverNodes, totalWeight);
+        boolean validity = checkValidity(graph, selectedEges, allNd);
 
-        return sol;
-//        System.out.println("\nVertex Cover: "+vertexCoverNodes);
-//        System.out.println("Total Weight: "+totalWeight);
+        if (validity == false){
+            throw new Exception("Cannot return a solution not valid!");
+        }
+
+        System.out.println("Total Weight: "+totalWeight);
     }
-
 
     public static Graph getInstance(String instancePath) throws IOException{
         // The format of all files is as follows: the first line contains the
@@ -120,9 +168,9 @@ public class Main2 {
             for (int j = 0; j < adjMatrix.get(i).size(); j++){
                 if(adjMatrix.get(i).get(j) == 1){
 //                  Evito di controllare manualmente di edge
-//                    if (i < j){
+                    if (i < j){
                         currentGraph.addEdge(i,j);
-//                    }
+                    }
                 }
             }
         }
@@ -130,14 +178,12 @@ public class Main2 {
         return currentGraph;
     }
 
-
-    public static void main(String[] args) throws IOException, PythonExecutionException {
+    public static void main(String[] args) throws Exception {
         Graph instGraph = getInstance("wvcp-instances/vc_20_60_01.txt");
-
 
         final List<Node> allNd = instGraph.getNodes();
         int graphDim = allNd.size();
-        final List<Edge> allEdgesOfGraph = new ArrayList<>();
+        final ArrayList<Edge> allEdgesOfGraph = new ArrayList<>();
         for (int i = 0; i<graphDim; i++){
             List<Edge> currentEdgeList = allNd.get(i).getEdgeList();
             int currEdgeListSize = currentEdgeList.size();
@@ -152,9 +198,7 @@ public class Main2 {
             weights[i] = allNd.get(i).getWeight();
         }
 
-        findMinimumWeightedVertexCoverApprox(allEdgesOfGraph, allNd, weights);
-
-
+        findMinimumWeightedVertexCoverApprox(allEdgesOfGraph, weights, allNd);
 
         System.out.println("AAAA");
     }

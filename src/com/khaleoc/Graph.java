@@ -53,6 +53,10 @@ public class Graph {
 
     }
 
+    public boolean[][] getAdjMatrix() {
+        return adjMatrix;
+    }
+
     // Print the matrix
     public String printAdjMatrix() {
         StringBuilder s = new StringBuilder();
