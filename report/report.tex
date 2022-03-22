@@ -139,75 +139,51 @@ Di conseguenza, è trovato opportuno introdurre un parametro $\epsilon$ ed una v
 \end{algorithm}
 
 Il parametro $\epsilon$ rappresenta banalmente la percentuale di \textit{risparmio} sul costo tra la soluzione corrente e quella peggiore.
-La \texttt{SecondChoicePerturbation} verrà utilizzata solo quando $\epsilon$ sarà maggiore di \verb|25|: in questo modo la perturbazione non contribuirà al \textit{lock} sull'ottimo locale.
+La \texttt{SecondChoicePerturbation} verrà utilizzata solo quando $\epsilon$ sarà maggiore di \verb|25|: in questo modo la perturbazione non contribuirà al \textit{lock} sull'ottimo locale: basandoci su questa percentuale vi è la certezza che vi saranno alcuni vertici non selezionati.
+Quest'ultima, funziona bene principalmente su istanze \textit{medie} e \textit{grandi}.
 
 \pagebreak
 
 
 \section{Criterio di accettazione}
 
-Per evitare che il criterio accetti solo soluzioni migliori rispetto alla precedente è stata introdotta una componente randomica per accettare anche soluzioni \textit{non migliori}.
-
-\section{Local Search e criterio di selezione del nodo migliore}
+Per evitare che il criterio accetti solo soluzioni migliori rispetto alla precedente è stata introdotta una componente randomica per accettare anche soluzioni \textit{non migliori} in modo da esplorarne il vicinato e cercare di trovare una soluzione ottima.
 
 \begin{algorithm}
-\caption{LocalSearch}
-\begin{algorithmic}
-\Require{ \texttt{Solution}}
-
-\If{
-    given solution has unreached nodes
-}   
-    \State\texttt{evaluate if swapping some nodes brings benefits to the solution }
-    \State\texttt{increment counter for every evalutation}
-\Else{}
-\State\texttt{evaluate if removing some nodes brings benefits to the solution }
-    \State\texttt{increment counter for every evalutation}
-\EndIf{}
-
-\State{\texttt{update solution}}
-
-\State \Return updated solution
-\end{algorithmic}
-\end{algorithm}
-
-\pagebreak
-
-\section{Criterio di accettazione}
-
-L'utilizzo del term memory permette di 'accettare' soluzioni peggiori rispetto ad altre e continuare la ricerca senza perder traccia di tutte le soluzioni trovate.
-In sintesi, se la soluzione perturbata è simile alla corrente il criterio di accettazione può ripescare, randomicamente una delle soluzioni presenti nel \verb|term-memory| e continuare la ricerca.
-È stato introdotto inolte un \verb|lockCounter| per evitare che la soluzione rimanga bloccata su un ottimo locale.
-
-
-\begin{algorithm}
-\caption{\texttt{Acceptance criteria}}
-\begin{algorithmic}
-    \Require \texttt{prev solution, new solution, term memory, lockCounter}
-    \If{
-        \State\texttt{cost old solution > cost new solution }
-        \Return\texttt{new solution}
-    }
-    \Else{
-        \State\texttt{if lockCounter = to maxValue}
-        \State\Return\texttt{random solution from term-memory}
-    }
-
+    \caption{AcceptanceCriteria}
+    \begin{algorithmic}
+    \Require{ \texttt{prevSolution, newSolution} }
+    \State\If{\texttt{ cost of prev solution > cost of new solution}}
+        \State\Return{\texttt{new solution}}
     \EndIf{}
-    
-    \State \Return \texttt{random choice between (perturbed solution, current solution)}
+    \State\texttt{extract random number between 1 and 2}
+    \State\If{\texttt{ extractedNumber is equal to 1}}
+        \State\Return{\texttt{new solution}}
+    \EndIf{}
+    \State\Return{\texttt{prev solution}}
 \end{algorithmic}
 \end{algorithm}
 
-Tuttavia nella pratica questa ricerca non ha sempre portato a buoni risultati, di conseguenza è stato disabilitato.
+
+\section{Local Search e criterio di selezione}
+
+La local search implementata permette di completare la soluzione perturbata, cercando tra i nodi che hanno gli archi non selezionati.
+Un vertice può essere \textit{preferito} rispetto ad un altro se:
+
+\begin{itemize}
+    \item{ha un peso minore rispetto agli altri candidati e dunque può potenzialmente far abbassare il costo della soluzione;}
+    \item{ha un numero di archi maggiore rispetto agli altri candidati e dunque può potenzialmente contribuire di più alla soluzione;}
+\end{itemize}
+
+Una versione randomizzata che utilizza entrambi ha portato i risultati migliori 
+
 
 \pagebreak
 
 \section{Benchmarks e conclusione}
 
 È stato implementato uno script che permette di salvare i benchmark le soluzioni ottenute dalle istanze su  file \verb|.csv|, oltre alla creazione dei grafici di convergenza.
-I grafici importati ed le tabelle fanno riferimento alle run con \verb|WeakPerturbation|. n certi casi, si rimane bloccati su un ottimo locale per molto tempo, fino a quando una soluzione perturbata non ottimale fa da punto di partenza per trovare una soluzione migliore.
-Si nota inoltre che un numero maggiore di nodi o archi non implica necessariamente un numero maggiore di valutazioni: anche grafi con lo stesso numero di nodi e archi hanno valori molto contrastanti, probabilmente perché il problema dipende molto dal peso dei nodi e dalla topologia del grafo.
+Con una buona dose di fortuna l'algoritmo riesce a trovare una soluzione buona sin dalle prime iterazioni, l'introduzione del parametro \texttt{$epsilon$} ha contribuito ad ottenere una scoperta del vicinato piuttosto esaustiva e dei benchmark piuttosto buoni.
 
 \begin{center}
 \begin{minipage}{0.48\linewidth}
@@ -224,6 +200,7 @@ Si nota inoltre che un numero maggiore di nodi o archi non implica necessariamen
 \end{minipage}
 \captionof{figure}{Sample grafici di convergenza}
 \end{center}
+
 
 \pagebreak
 
@@ -328,7 +305,7 @@ Una delle difficoltà più grandi trovate durante l'implementazione è stato que
     \item{implementare altri criteri per la selezione del nodo;}
     \item{implementare altri criteri di accettazione;}
     \item{perfezionare l'algoritmo su istanze piccole;}
-    \item{minimizzare il numero di valutazioni della fitness;}
+    \item{implementare altre soluzioni di partenza.}
 \end{itemize}
 
 \pagebreak
