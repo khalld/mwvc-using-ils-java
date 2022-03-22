@@ -14,70 +14,24 @@ public class Main2 {
     public static final String BENCHMARK_FOLDER = "bench-new/";
     public static final String CONV_GRAPH_FOLDER = "bench-new/conv_g/";
 
-    static class Vertex{
-        int id;
-        int weight;
-        boolean explored;
-        List<Edge> adjList;
 
-        public Vertex(int id, int weight, List<Edge> adjList) {
-            this.id = id;
-            this.weight = weight;
-            this.explored = false;
-            this.adjList = adjList;
-        }
-
-        public boolean isExplored() {
-            return explored;
-        }
-
-        public void setExplored(boolean explored) {
-            this.explored = explored;
-        }
-
-        public int getId() {
-            return id;
-        }
-
-        public int getWeight() {
-            return weight;
-        }
-
-        public List<Edge> getAdjList() {
-            return adjList;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            Vertex vertex = (Vertex) o;
-            return id == vertex.id && weight == vertex.weight;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(id, weight);
-        }
-    }
-
-    static ArrayList<Edge> getNotFoundedEdge(ArrayList<Edge> allEdges, ArrayList<Edge> selected, List<Node> allNd){
+    static ArrayList<Edge> getNotFoundedEdge(ArrayList<Edge> allEdges, ArrayList<Edge> selected, List<Vertex> allVertex){
         ArrayList<Edge> allEdgesFounded = new ArrayList<>();
         for (int i = 0; i < selected.size(); i++){
             Edge currentEdge = selected.get(i);
-            Node from = allNd.get(currentEdge.getSource());
+            Vertex from = allVertex.get(currentEdge.getSource());
 
-            for (int j = 0; j < from.getEdgeList().size(); j++){
-                if(!allEdgesFounded.contains(from.getEdgeList().get(j))){
-                    allEdgesFounded.add(from.getEdgeList().get(j));
+            for (int j = 0; j < from.getAdjList().size(); j++){
+                if(!allEdgesFounded.contains(from.getAdjList().get(j))){
+                    allEdgesFounded.add(from.getAdjList().get(j));
                 }
             }
 
-            Node dest = allNd.get(currentEdge.getDest());
+            Vertex dest = allVertex.get(currentEdge.getDest());
 
-            for (int j = 0; j < dest.getEdgeList().size(); j++){
-                if(!allEdgesFounded.contains(dest.getEdgeList().get(j))){
-                    allEdgesFounded.add(dest.getEdgeList().get(j));
+            for (int j = 0; j < dest.getAdjList().size(); j++){
+                if(!allEdgesFounded.contains(dest.getAdjList().get(j))){
+                    allEdgesFounded.add(dest.getAdjList().get(j));
                 }
             }
 
@@ -93,21 +47,37 @@ public class Main2 {
         return notFounded;
     }
 
+    static Solution2 checkValidity(Solution2 inputSol, ArrayList<Edge> allEdges, ArrayList<Vertex> allVertex){
+        ArrayList<Edge> notFounded = getNotFoundedEdge(allEdges, inputSol.getSelectedEdges(), allVertex);
 
-    // FIXME:
-    static boolean checkValidity(ArrayList<Edge> allEdges, ArrayList<Edge> selected, List<Node> allNd){
-        ArrayList<Edge> notFounded = getNotFoundedEdge(allEdges, selected, allNd);
+        while (notFounded.size() != 0 ){
+//             TODO: trova tra i nodi non selezionati quello mancante ed aggiungi quello con minore costo
+            List<Vertex> candidatesVertex = new ArrayList<>();
 
-//        while (notFounded.size() == 0 ){
-            // TODO: trova tra i nodi non selezionati quello mancante ed aggiungi quello con minore costo
-//            selected.add(notFounded.get(0));
-//            notFounded = getNotFoundedEdge(allEdges, selected, allNd);
-//        }
+            for(int i=0; i<notFounded.size(); i++){
+                Vertex from = allVertex.get(notFounded.get(i).getSource());
+                Vertex dest = allVertex.get(notFounded.get(i).getDest());
 
-        return true;
+                if(!inputSol.getSelectedVertex().contains(from)){
+                    candidatesVertex.add(from);
+                }
+
+                if(!inputSol.getSelectedVertex().contains(dest)){
+                    candidatesVertex.add(dest);
+                }
+
+            }
+
+            // TODO: migliora la scelta del candidato
+            inputSol.addVertex(candidatesVertex.get(0));
+
+            notFounded = getNotFoundedEdge(allEdges, inputSol.getSelectedEdges(), allVertex);
+        }
+
+        return inputSol;
     }
 
-    public static Solution2 getInitialSolution(ArrayList<Edge> graph, ArrayList<Vertex> allVertices, List<Node> allNd) throws Exception {
+    public static Solution2 getInitialSolution(ArrayList<Edge> graph, ArrayList<Vertex> allVertices, ArrayList<Vertex> allVertex) throws Exception {
 
         ArrayList<Vertex> selectedVertex = new ArrayList<>();
         ArrayList<Edge> selectedEges = new ArrayList<>();
@@ -135,15 +105,12 @@ public class Main2 {
                 }
             }
 
-        boolean validity = checkValidity(graph, selectedEges, allNd);
-//
-        if (validity == false){
-            throw new Exception("Cannot return a solution not valid!");
-        }
-//
-//        System.out.println("Total Weight: "+totalWeight);
+        Solution2 initialSol = new Solution2(selectedVertex, selectedEges, totalWeight);
 
-        Solution2 toRet = new Solution2(selectedVertex, selectedEges, totalWeight);
+        Solution2 toRet = checkValidity(initialSol, graph, allVertex);
+
+
+//        System.out.println("Total Weight: "+totalWeight);
 
         return toRet;
     }
@@ -191,22 +158,23 @@ public class Main2 {
         return currentGraph;
     }
 
-    public static Solution2 weakPerturbation(List<Edge> allEdgesOfGraph, List<Vertex> allNd, Solution2 inputSolution) {
+    public static Solution2 weakPerturbation(ArrayList<Edge> allEdgesOfGraph, ArrayList<Vertex> allVertex, Solution2 inputSolution) {
+        // TODO: prevedi anche l'aggiunta
         List<Vertex> alreadySelected = inputSolution.getSelectedVertex();
-        List<Vertex> notSelectedNodes = new ArrayList<>(allNd);
+        List<Vertex> notSelectedNodes = new ArrayList<>(allVertex);
         notSelectedNodes.removeAll(alreadySelected);
 
         int randomIndex = new Random().nextInt(alreadySelected.size());
-        Vertex toRem = allNd.get(randomIndex);
+        Vertex toRem = allVertex.get(randomIndex);
         inputSolution.removeVertex(toRem);
 
-        // TODO Checkvalidity
+        Solution2 toRet = checkValidity(inputSolution, allEdgesOfGraph, allVertex);
 
-        return inputSolution;
+        return toRet;
     }
 
     public static Solution2 acceptanceCriteria(Solution2 prevSol, Solution2 newSol){
-
+        //TODO: rendilo + robusto
         if (prevSol.getCost() > newSol.getCost()){
             return newSol;
         }
@@ -214,8 +182,11 @@ public class Main2 {
         return prevSol;
     }
 
-    public static LocalSearchObj2 localSearch(Solution2 inputSolution, List<Node> allNd){
-        int iterator = 1000; // FIXME
+    public static LocalSearchObj2 localSearch(Solution2 inputSolution){
+        int iterator = 1000;
+
+        // FIXME
+        Solution2 toCheckValidity = new Solution2(inputSolution.getSelectedVertex(), inputSolution.getSelectedEdges(), inputSolution.getCost());
 
         LocalSearchObj2 toReturn = new LocalSearchObj2(inputSolution, iterator);
 
@@ -247,7 +218,9 @@ public class Main2 {
             allVertices.add(new Vertex(i, allNd.get(i).getWeight(), allNd.get(i).getEdgeList()));
         }
 
-        Solution2 currentSol = getInitialSolution(allEdgesOfGraph, allVertices, allNd);
+        // A PARTIRE DA QUI.. da sopra x ora nn toccare, sistema quando finisci
+
+        Solution2 currentSol = getInitialSolution(allEdgesOfGraph, allVertices, allVertices);
         Solution2 bestSolutionToRet = new Solution2(currentSol.getSelectedVertex(), currentSol.getSelectedEdges(), currentSol.getCost());
 
         coordY.add(currentSol.getCost());
@@ -255,13 +228,11 @@ public class Main2 {
 
         while (currentIter < MAX_EVALS){
 
-            // TODO: perturbation
+            // TODO: rendi + robusto!
             Solution2 perturbedSolution = weakPerturbation(allEdgesOfGraph, allVertices, currentSol);
 
-            // Controlla completezza sol.
-
             // TODO: localSearch
-            LocalSearchObj2 lsSol = localSearch(perturbedSolution, allNd);
+            LocalSearchObj2 lsSol = localSearch(perturbedSolution);
 
             // TODO: Miglioralo
             currentSol = acceptanceCriteria(perturbedSolution, perturbedSolution);

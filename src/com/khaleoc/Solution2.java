@@ -7,30 +7,26 @@ import java.util.Objects;
 
 
 public class Solution2 {
-    public List<Main2.Vertex> selectedVertex;
-    public List<Edge> selectedEdges;
+    public List<Vertex> selectedVertex;
+    public ArrayList<Edge> selectedEdges;
     int cost;
 
-    public Solution2(List<Main2.Vertex> selectedVertex, List<Edge> selectedEdges, int cost) {
+    public Solution2(List<Vertex> selectedVertex, ArrayList<Edge> selectedEdges, int cost) {
         this.selectedVertex = selectedVertex;
         this.selectedEdges = selectedEdges;
         this.cost = cost;
     }
 
-    public List<Main2.Vertex> getSelectedVertex() {
+    public List<Vertex> getSelectedVertex() {
         return selectedVertex;
     }
 
-    public void setSelectedVertex(List<Main2.Vertex> selectedVertex) {
+    public void setSelectedVertex(List<Vertex> selectedVertex) {
         this.selectedVertex = selectedVertex;
     }
 
-    public List<Edge> getSelectedEdges() {
+    public ArrayList<Edge> getSelectedEdges() {
         return selectedEdges;
-    }
-
-    public void setSelectedEdges(List<Edge> selectedEdges) {
-        this.selectedEdges = selectedEdges;
     }
 
     public int getCost() {
@@ -41,7 +37,7 @@ public class Solution2 {
         this.cost = cost;
     }
 
-    public void addVertex(Main2.Vertex v){
+    public void addVertex(Vertex v){
 
         boolean isAlreadyPresent = this.getSelectedVertex().contains(v);
 
@@ -52,7 +48,7 @@ public class Solution2 {
 
     }
 
-    public void removeVertex(Main2.Vertex v){
+    public void removeVertex(Vertex v){
         boolean isAlreadyPresent = this.selectedVertex.contains(v);
 
         if (isAlreadyPresent == true){
