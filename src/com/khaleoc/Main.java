@@ -48,6 +48,9 @@ public class Main {
     }
 
     static Solution checkValidity(Solution inputSol, ArrayList<Edge> allEdges, ArrayList<Vertex> allVertex){
+
+        int iter = 0;
+
         ArrayList<Edge> notFounded = getNotFoundedEdge(allEdges, inputSol.getSelectedEdges(), allVertex);
 
         while (notFounded.size() != 0 ){
@@ -78,13 +81,18 @@ public class Main {
             inputSol.addVertex(candidatesVertex.get(0));
 
             notFounded = getNotFoundedEdge(allEdges, inputSol.getSelectedEdges(), allVertex);
+
+            iter+=1;
         }
+
+        inputSol.setIteration(iter);
 
         return inputSol;
     }
 
     public static Solution getInitialSolution(String instanceName, ArrayList<Edge> graph, ArrayList<Vertex> allVertices, ArrayList<Vertex> allVertex) throws Exception {
 
+        int iter = 0;
         ArrayList<Vertex> selectedVertex = new ArrayList<>();
         ArrayList<Edge> selectedEges = new ArrayList<>();
         int totalWeight = 0;
@@ -111,9 +119,13 @@ public class Main {
                 }
             }
 
+            iter+=1;
+
         Solution initialSol = new Solution(instanceName, selectedVertex, selectedEges, totalWeight);
 
         Solution toRet = checkValidity(initialSol, graph, allVertex);
+
+        toRet.setIteration(iter);
 
         return toRet;
     }
@@ -245,7 +257,7 @@ public class Main {
     }
 
     public static LocalSearchObj localSearch(Solution inputSolution, ArrayList<Edge> allEdgesOfGraph, ArrayList<Vertex>allVertices){
-        int iterator = 1000;
+        int iterator = 10;
 
         // FIXME
         Solution toCheckValidity = new Solution(inputSolution.getInstanceName(), inputSolution.getSelectedVertex(), inputSolution.getSelectedEdges(), inputSolution.getCost());
@@ -256,8 +268,6 @@ public class Main {
     }
 
     public static IlsObj IteratedLocalSearch(Graph instanceGraph, String instancePath) throws Exception, PythonExecutionException {
-        int currentIter = 1;
-        int iterBsToRet = 1;
         long startTime = System.nanoTime();
 
         final List<Integer> coordY = new ArrayList<>();
@@ -283,6 +293,9 @@ public class Main {
         Solution currentSol = getInitialSolution(instancePath, allEdgesOfGraph, allVertices, allVertices);
         Solution bestSolutionToRet = new Solution(instancePath, currentSol.getSelectedVertex(), currentSol.getSelectedEdges(), currentSol.getCost());
 
+        int currentIter = currentSol.getIteration();
+        int iterBsToRet = bestSolutionToRet.getIteration();
+
         coordY.add(currentSol.getCost());
         coordX.add(currentIter);
 
@@ -293,6 +306,8 @@ public class Main {
 
             // TODO: localSearch
             LocalSearchObj lsSol = localSearch(perturbedSolution, allEdgesOfGraph, allVertices);
+
+            currentIter += lsSol.getSolution().getIteration();
 
             currentSol = acceptanceCriteria(perturbedSolution, perturbedSolution);
 
