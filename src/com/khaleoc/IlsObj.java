@@ -1,17 +1,17 @@
 package com.khaleoc;
 
 public class IlsObj {
-    public Solution2 solution;
+    public Solution solution;
     public int iterSolutionFounded;
     public long elapsedTime;
 
-    public IlsObj(Solution2 solution, int iterSolutionFounded, long elapsedTime) {
+    public IlsObj(Solution solution, int iterSolutionFounded, long elapsedTime) {
         this.solution = solution;
         this.iterSolutionFounded = iterSolutionFounded;
         this.elapsedTime = elapsedTime;
     }
 
-    public Solution2 getSolution() {
+    public Solution getSolution() {
         return solution;
     }
 

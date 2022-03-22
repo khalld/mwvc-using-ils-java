@@ -1,111 +1,75 @@
 package com.khaleoc;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
-
 
 public class Solution {
-    public List<Edge> allEdges;
-
-    public List<Node> selNodes;
-    public List<Edge> reachedEdges;
-
-    public int totalCost;
-    public boolean isComplete;
     public String instanceName;
+    public List<Vertex> selectedVertex;
+    public ArrayList<Edge> selectedEdges;
+    int cost;
 
-    public Solution(String instanceName, List<Edge> allEdges) {
-        this.instanceName = instanceName.replace(".txt", "");;
-
-        this.allEdges = allEdges;
-
-        this.selNodes = new ArrayList<>();
-        this.reachedEdges = new ArrayList<>();
-        this.totalCost = 0;
-        this.isComplete = false;
+    public Solution(String instanceName, List<Vertex> selectedVertex, ArrayList<Edge> selectedEdges, int cost) {
+        this.instanceName = instanceName.replace(".txt", "");
+        this.selectedVertex = selectedVertex;
+        this.selectedEdges = selectedEdges;
+        this.cost = cost;
     }
 
-    public void calcReachedEdges(){
-        this.reachedEdges = new ArrayList<>();
-        int selNodesSize = this.selNodes.size();
-
-        for (int i = 0; i<selNodesSize; i++){
-            List<Edge> currentEdgeList = this.selNodes.get(i).getEdgeList();
-            int currEdgeListSize = currentEdgeList.size();
-            for (int j = 0; j < currEdgeListSize; j++){
-                if(! this.reachedEdges.contains(currentEdgeList.get(j))) {
-                    this.reachedEdges.add(currentEdgeList.get(j));
-                }
-            }
-        }
+    public List<Vertex> getSelectedVertex() {
+        return selectedVertex;
     }
 
-    public void addNode(Node n){
-
-        boolean isAlreadyPresent = this.selNodes.contains(n);
-
-        if (isAlreadyPresent == false){
-            this.selNodes.add(n);
-            this.calcReachedEdges();
-            this.updateCost();
-            this.checkValidity();
-        } // else throw new RuntimeException("Cannot add a node that is already in selected nodes!");
-
+    public void setSelectedVertex(List<Vertex> selectedVertex) {
+        this.selectedVertex = selectedVertex;
     }
 
-    public void removeNode(Node n){
-        boolean isAlreadyPresent = this.selNodes.contains(n);
-
-        if (isAlreadyPresent == true){
-            this.selNodes.remove(n);
-            this.calcReachedEdges();
-            this.updateCost();
-            this.checkValidity();
-        } // else throw new RuntimeException("Cannot remove a node that is not in selected nodes!");
-
+    public ArrayList<Edge> getSelectedEdges() {
+        return selectedEdges;
     }
 
-    public void updateCost(){
-        this.totalCost = 0;
-        int selNodesSize = selNodes.size();
-        for (int i=0; i < selNodesSize; i++){
-            this.totalCost+= selNodes.get(i).weight;
-        }
+    public int getCost() {
+        return cost;
     }
 
     public String getInstanceName() {
         return instanceName;
     }
 
-    public void checkValidity(){
-        this.reachedEdges.sort(Comparator.comparing(Edge::getSource));
-        this.isComplete = this.reachedEdges.equals(this.allEdges);
+    public void addVertex(Vertex v){
+
+        boolean isAlreadyPresent = this.getSelectedVertex().contains(v);
+
+        if (isAlreadyPresent == false){
+            this.selectedVertex.add(v);
+            this.calcReachedEdges();
+        } // else throw new RuntimeException("Cannot add a node that is already in selected nodes!");
+
     }
 
-    public boolean isComplete() {
-        return isComplete;
+    public void removeVertex(Vertex v){
+        boolean isAlreadyPresent = this.selectedVertex.contains(v);
+
+        if (isAlreadyPresent == true){
+            this.selectedVertex.remove(v);
+            this.calcReachedEdges();
+        } // else throw new RuntimeException("Cannot remove a node that is not in selected nodes!");
+
     }
 
-    public int getTotalCost() {
-        return totalCost;
-    }
+    public void calcReachedEdges(){
+        this.selectedEdges = new ArrayList<>();
+        this.cost = 0;
 
-    public List<Node> getSelNodes() {
-        return selNodes;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Solution solution = (Solution) o;
-        return totalCost == solution.totalCost && isComplete == solution.isComplete && Objects.equals(allEdges, solution.allEdges) && Objects.equals(selNodes, solution.selNodes) && Objects.equals(reachedEdges, solution.reachedEdges) && Objects.equals(instanceName, solution.instanceName);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(allEdges, selNodes, reachedEdges, totalCost, isComplete, instanceName);
+        for (int i = 0; i<this.selectedVertex.size(); i++){
+            this.cost+= selectedVertex.get(i).getWeight();
+            List<Edge> currentEdgeList = this.selectedVertex.get(i).getAdjList();
+            int currEdgeListSize = currentEdgeList.size();
+            for (int j = 0; j < currEdgeListSize; j++){
+                if(! this.selectedEdges.contains(currentEdgeList.get(j))) {
+                    this.selectedEdges.add(currentEdgeList.get(j));
+                }
+            }
+        }
     }
 }

@@ -10,9 +10,115 @@ import java.util.stream.Collectors;
 
 public class Main {
     public static final int MAX_EVALS = 20000;
-    public static final String FOLDER_INSTANCES = "wvcp-instances";
-    public static final String BENCHMARK_FOLDER = "benchmarks/";
-    public static final String CONV_GRAPH_FOLDER = "benchmarks/convergence_graphs/";
+    public static final String FOLDER_INSTANCES = "wvcp-instances-red";
+    public static final String BENCHMARK_FOLDER = "benchmark/";
+    public static final String CONV_GRAPH_FOLDER = BENCHMARK_FOLDER + "conv_g/";
+
+    static ArrayList<Edge> getNotFoundedEdge(ArrayList<Edge> allEdges, ArrayList<Edge> selected, List<Vertex> allVertex){
+        ArrayList<Edge> allEdgesFounded = new ArrayList<>();
+        for (int i = 0; i < selected.size(); i++){
+            Edge currentEdge = selected.get(i);
+            Vertex from = allVertex.get(currentEdge.getSource());
+
+            for (int j = 0; j < from.getAdjList().size(); j++){
+                if(!allEdgesFounded.contains(from.getAdjList().get(j))){
+                    allEdgesFounded.add(from.getAdjList().get(j));
+                }
+            }
+
+            Vertex dest = allVertex.get(currentEdge.getDest());
+
+            for (int j = 0; j < dest.getAdjList().size(); j++){
+                if(!allEdgesFounded.contains(dest.getAdjList().get(j))){
+                    allEdgesFounded.add(dest.getAdjList().get(j));
+                }
+            }
+
+        }
+
+        ArrayList<Edge> notFounded = new ArrayList<>();
+        for (Edge e : allEdges) {
+            if (!allEdgesFounded.contains(e)) {
+                notFounded.add(e);
+            }
+        }
+
+        return notFounded;
+    }
+
+    static Solution checkValidity(Solution inputSol, ArrayList<Edge> allEdges, ArrayList<Vertex> allVertex){
+        ArrayList<Edge> notFounded = getNotFoundedEdge(allEdges, inputSol.getSelectedEdges(), allVertex);
+
+        while (notFounded.size() != 0 ){
+            List<Vertex> candidatesVertex = new ArrayList<>();
+
+            for(int i=0; i<notFounded.size(); i++){
+                Vertex from = allVertex.get(notFounded.get(i).getSource());
+                Vertex dest = allVertex.get(notFounded.get(i).getDest());
+
+                if(!inputSol.getSelectedVertex().contains(from)){
+                    candidatesVertex.add(from);
+                }
+
+                if(!inputSol.getSelectedVertex().contains(dest)){
+                    candidatesVertex.add(dest);
+                }
+
+            }
+
+            int rndVal = (int)Math.floor(Math.random()*(2-1+1)+1);
+
+            if (rndVal == 1){
+                candidatesVertex.sort(Comparator.comparing(Vertex::getWeight));
+            } else {
+                candidatesVertex.sort(Comparator.comparing(Vertex::getAdjListSize).reversed());
+            }
+
+            inputSol.addVertex(candidatesVertex.get(0));
+
+            notFounded = getNotFoundedEdge(allEdges, inputSol.getSelectedEdges(), allVertex);
+        }
+
+        return inputSol;
+    }
+
+    public static Solution getInitialSolution(String instanceName, ArrayList<Edge> graph, ArrayList<Vertex> allVertices, ArrayList<Vertex> allVertex) throws Exception {
+
+        ArrayList<Vertex> selectedVertex = new ArrayList<>();
+        ArrayList<Edge> selectedEges = new ArrayList<>();
+        int totalWeight = 0;
+
+        for(Edge edge : graph){
+            Vertex fromVertex = allVertices.get(edge.source);
+            Vertex toVertex = allVertices.get(edge.dest);
+
+            if(fromVertex.isExplored() == true || toVertex.isExplored() == true){
+                continue;
+            }
+
+            if(fromVertex.getWeight() < toVertex.getWeight()){
+                    fromVertex.setExplored(true);
+                    totalWeight += fromVertex.getWeight();
+                    selectedVertex.add(fromVertex);
+                    selectedEges.add(edge);
+                }
+                else{
+                    toVertex.setExplored(true);
+                    totalWeight += toVertex.getWeight();
+                    selectedVertex.add(toVertex);
+                    selectedEges.add(edge);
+                }
+            }
+
+        Solution initialSol = new Solution(instanceName, selectedVertex, selectedEges, totalWeight);
+
+        Solution toRet = checkValidity(initialSol, graph, allVertex);
+
+
+//        System.out.println("Total Weight: "+totalWeight);
+
+        return toRet;
+    }
 
     public static Graph getInstance(String instancePath) throws IOException{
         // The format of all files is as follows: the first line contains the
@@ -57,175 +163,101 @@ public class Main {
         return currentGraph;
     }
 
-    public static Solution weakPerturbation(List<Node> allNd, Solution inputSolution) {
-        List<Node> alreadySelected = inputSolution.getSelNodes();
-        List<Node> notSelectedNodes = new ArrayList<>(allNd);
+    // TODO:
+    public static void strongPerturbation(List<Node> allNd, Solution inputSolution) {
+
+//        List<Node> alreadySelected = inputSolution.getSelNodes();
+//        List<Node> notSelectedNodes = new ArrayList<>(allNd);
+//        notSelectedNodes.removeAll(alreadySelected);
+//
+//        int max = (int)alreadySelected.size() / 2;
+//        int min = 1;
+//        int pert_times = (int)Math.floor(Math.random()*(max-min+1)+min);
+//
+//        if(notSelectedNodes.size() == 0){
+//            // Posso solo rimuovere
+//            for (int i = 0; i < pert_times; i++){
+//                int randomIndex = new Random().nextInt(alreadySelected.size());
+//                Node toRem = allNd.get(randomIndex);
+//                inputSolution.removeNode(toRem);
+//                alreadySelected = inputSolution.getSelNodes();
+//                notSelectedNodes = new ArrayList<>(allNd);
+//                notSelectedNodes.removeAll(alreadySelected);
+//            }
+//        } else {
+//            // Posso anche aggiungere nodi alla perturbazione
+//            for (int i=0; i<pert_times; i++){
+//                int randomIndexAdd = new Random().nextInt(notSelectedNodes.size());
+//                int randomIndexRem = new Random().nextInt(alreadySelected.size());
+//
+//                Node toRem = allNd.get(randomIndexRem);
+//                Node toAdd = allNd.get(randomIndexAdd);
+//                inputSolution.removeNode(toRem);
+//                inputSolution.addNode(toAdd);
+//
+//                alreadySelected = inputSolution.getSelNodes();
+//                notSelectedNodes = new ArrayList<>(allNd);
+//                notSelectedNodes.removeAll(alreadySelected);
+//            }
+//
+//        }
+//
+////        Solution inputSolutionChecked = completeSol(inputSolution, allNd);
+//
+//        return inputSolution;
+    }
+
+    public static Solution weakPerturbation(ArrayList<Edge> allEdgesOfGraph, ArrayList<Vertex> allVertex, Solution inputSolution) {
+        List<Vertex> alreadySelected = inputSolution.getSelectedVertex();
+        List<Vertex> notSelectedNodes = new ArrayList<>(allVertex);
         notSelectedNodes.removeAll(alreadySelected);
 
         if(notSelectedNodes.size() == 0){
             // Posso solo rimuovere
             int randomIndex = new Random().nextInt(alreadySelected.size());
-            Node toRem = allNd.get(randomIndex);
-            inputSolution.removeNode(toRem);
+            Vertex toRem = allVertex.get(randomIndex);
+            inputSolution.removeVertex(toRem);
         } else {
             // Posso anche aggiungere nodi alla perturbazione
-            int randomIndexAdd = new Random().nextInt(notSelectedNodes.size());
             int randomIndexRem = new Random().nextInt(alreadySelected.size());
-            Node toRem = allNd.get(randomIndexRem);
-            Node toAdd = allNd.get(randomIndexAdd);
-            inputSolution.removeNode(toRem);
-            inputSolution.addNode(toAdd);
+            int randomIndexAdd = new Random().nextInt(alreadySelected.size());
+
+            Vertex toRem = allVertex.get(randomIndexRem);
+            inputSolution.removeVertex(toRem);
+            Vertex toAdd = allVertex.get(randomIndexAdd);
+            inputSolution.addVertex(toAdd);
         }
 
-//        Solution inputSolutionChecked = completeSol(inputSolution, allNd);
 
-        return inputSolution;
+        Solution toRet = checkValidity(inputSolution, allEdgesOfGraph, allVertex);
+
+        return toRet;
     }
 
-    public static Solution strongPerturbation(List<Node> allNd, Solution inputSolution) {
-
-        List<Node> alreadySelected = inputSolution.getSelNodes();
-        List<Node> notSelectedNodes = new ArrayList<>(allNd);
-        notSelectedNodes.removeAll(alreadySelected);
-
-        int max = (int)alreadySelected.size() / 2;
-        int min = 1;
-        int pert_times = (int)Math.floor(Math.random()*(max-min+1)+min);
-
-        if(notSelectedNodes.size() == 0){
-            // Posso solo rimuovere
-            for (int i = 0; i < pert_times; i++){
-                int randomIndex = new Random().nextInt(alreadySelected.size());
-                Node toRem = allNd.get(randomIndex);
-                inputSolution.removeNode(toRem);
-                alreadySelected = inputSolution.getSelNodes();
-                notSelectedNodes = new ArrayList<>(allNd);
-                notSelectedNodes.removeAll(alreadySelected);
-            }
-        } else {
-            // Posso anche aggiungere nodi alla perturbazione
-            for (int i=0; i<pert_times; i++){
-                int randomIndexAdd = new Random().nextInt(notSelectedNodes.size());
-                int randomIndexRem = new Random().nextInt(alreadySelected.size());
-
-                Node toRem = allNd.get(randomIndexRem);
-                Node toAdd = allNd.get(randomIndexAdd);
-                inputSolution.removeNode(toRem);
-                inputSolution.addNode(toAdd);
-
-                alreadySelected = inputSolution.getSelNodes();
-                notSelectedNodes = new ArrayList<>(allNd);
-                notSelectedNodes.removeAll(alreadySelected);
-            }
-
-        }
-
-//        Solution inputSolutionChecked = completeSol(inputSolution, allNd);
-
-        return inputSolution;
-    }
-
-    public static LocalSearchObj localSearch(Solution inputSolution, List<Node> allNd){
-        int iterator = 0;
-
-        List<Node> alreadySelected = inputSolution.getSelNodes();
-        List<Node> notSelectedNodes = new ArrayList<>(allNd);
-        notSelectedNodes.removeAll(alreadySelected);
-
-        int approx_cost_best = inputSolution.getTotalCost();
-        int approx_cost = 0;
-        Node toRem = null;
-        Node toAdd = null;
-
-        if (notSelectedNodes.size() > 0 ){
-            // Posso provare lo swap dei nodi selezionati
-
-            for (int i = 0; i < alreadySelected.size(); i++){
-                Node wantToRemove = alreadySelected.get(i);
-                for (int j=0; j< notSelectedNodes.size(); j++){
-                    Node wantToAdd = alreadySelected.get(j);
-
-                    approx_cost = inputSolution.getTotalCost() - wantToRemove.getWeight() + wantToAdd.getWeight();
-                    iterator += 1;
-
-                    if (approx_cost < inputSolution.getTotalCost()){
-                        if (approx_cost_best > approx_cost) {
-                            toRem = wantToRemove;
-                            toAdd = wantToAdd;
-                            approx_cost_best = approx_cost;
-                            break;
-                        }
-                    }
-                }
-            }
-        } else {
-            // Posso solo eliminare nodi per 'alleggerire' la soluzione
-            for (int i = 0; i < alreadySelected.size(); i++){
-                Node wantToRemove = alreadySelected.get(i);
-                approx_cost = inputSolution.getTotalCost() - wantToRemove.getWeight();
-                iterator += 1;
-
-                if (approx_cost < inputSolution.getTotalCost()){
-                    if (approx_cost_best > approx_cost) {
-                        toRem = wantToRemove;
-                        approx_cost_best = approx_cost;
-                        break;
-                    }
-                }
-            }
-        }
-        if (toAdd != null) {
-            inputSolution.addNode(toAdd);
-        }
-        if (toRem != null) {
-            inputSolution.removeNode(toRem);
-        }
-
-        Solution inputSolChecked = completeSol(inputSolution, allNd);
-        LocalSearchObj toReturn = new LocalSearchObj(inputSolChecked, iterator);
-
-        return toReturn;
-    }
-
-    public static Solution acceptanceCriteria(Solution prevSol, Solution newSol, List<Solution> termMemory, int lockCounter){
-
-        if (prevSol.getTotalCost() > newSol.getTotalCost()){
+    public static Solution acceptanceCriteria(Solution prevSol, Solution newSol){
+        if (prevSol.getCost() > newSol.getCost()){
             return newSol;
         }
-//        else if (lockCounter % 25 == 0) {
-//            int randomIndex = new Random().nextInt(termMemory.size());
-//            Solution alreadyFoundedSol = termMemory.get(randomIndex);
-//            return alreadyFoundedSol;
-//        }
+
+        if ((int)Math.floor(Math.random()*(2-1+1)+1) == 1){
+            return newSol;
+        }
 
         return prevSol;
     }
 
-    public static Solution completeSol(Solution inputSol, List<Node> allAvailableNodes){
-        boolean isComplete = inputSol.isComplete();
+    public static LocalSearchObj localSearch(Solution inputSolution){
+        int iterator = 1000;
 
-        while (isComplete == false) {
-            List<Node> alreadySelected = inputSol.getSelNodes();
-            List<Node> notSelectedNodes = new ArrayList<>(allAvailableNodes);
-            notSelectedNodes.removeAll(alreadySelected);
+        // FIXME
+        Solution toCheckValidity = new Solution(inputSolution.getInstanceName(), inputSolution.getSelectedVertex(), inputSolution.getSelectedEdges(), inputSolution.getCost());
 
-            int rndVal = (int)Math.floor(Math.random()*(2-1+1)+1);
+        LocalSearchObj toReturn = new LocalSearchObj(inputSolution, iterator);
 
-            if (rndVal == 1){
-                notSelectedNodes.sort(Comparator.comparing(Node::getWeight));
-            } else {
-                notSelectedNodes.sort(Comparator.comparing(Node::getEdgeSize).reversed());
-            }
-
-            inputSol.addNode(notSelectedNodes.get(0));
-            isComplete = inputSol.isComplete();
-
-        }
-
-        return inputSol;
+        return toReturn;
     }
 
-    public static IlsObj IteratedLocalSearch(Graph instanceGraph, String instancePath) throws PythonExecutionException, IOException {
+    public static IlsObj IteratedLocalSearch(Graph instanceGraph, String instancePath) throws Exception, PythonExecutionException {
         int currentIter = 1;
         int iterBsToRet = 1;
         long startTime = System.nanoTime();
@@ -233,75 +265,53 @@ public class Main {
         final List<Integer> coordY = new ArrayList<>();
         final List<Integer> coordX = new ArrayList<>();
 
-        final List<Node> allNd = instanceGraph.getNodes();
-        int allNdSize = allNd.size();
-//        estraggo tutti gli edge del grafo
-        final List<Edge> allEdgesOfGraph = new ArrayList<>();
-        for (int i = 0; i<allNdSize; i++){
-            List<Edge> currentEdgeList = allNd.get(i).getEdgeList();
+        final ArrayList<Edge> allEdgesOfGraph = new ArrayList<>();
+        for (int i = 0; i<instanceGraph.getNodes().size(); i++){
+            List<Edge> currentEdgeList = instanceGraph.getNodes().get(i).getEdgeList();
             int currEdgeListSize = currentEdgeList.size();
             for (int j = 0; j < currEdgeListSize; j++){
-                if (! allEdgesOfGraph.contains(currentEdgeList.get(j))){
-                    allEdgesOfGraph.add(currentEdgeList.get(j));
-                }
-
+                allEdgesOfGraph.add(currentEdgeList.get(j));
             }
         }
 
-        Solution currentSol = new Solution(instancePath, allEdgesOfGraph);
-        Solution bestSolutionToRet = new Solution(instancePath, allEdgesOfGraph);
+        ArrayList<Vertex> allVertices = new ArrayList<>();
 
-//        for (int i=0; i < allNdSize; i++){
-//            currentSol.addNode(allNd.get(i));
-//            bestSolutionToRet.addNode(allNd.get(i));
-//        }
-
-//        Same benchmarks like starting with worst solution
-        boolean isComplete = currentSol.isComplete();
-        while (isComplete == false) {
-            int randomIndex = new Random().nextInt(allNd.size());
-            currentSol.addNode(allNd.get(randomIndex));
-            bestSolutionToRet.addNode(allNd.get(randomIndex));
-            isComplete = currentSol.isComplete();
+        for (int i=0; i< instanceGraph.getNodes().size(); i++){
+            allVertices.add(new Vertex(i, instanceGraph.getNodes().get(i).getWeight(), instanceGraph.getNodes().get(i).getEdgeList()));
         }
 
-        coordY.add(currentSol.getTotalCost());
+        // A PARTIRE DA QUI.. da sopra x ora nn toccare, sistema quando finisci
+
+        Solution currentSol = getInitialSolution(instancePath, allEdgesOfGraph, allVertices, allVertices);
+        Solution bestSolutionToRet = new Solution(instancePath, currentSol.getSelectedVertex(), currentSol.getSelectedEdges(), currentSol.getCost());
+
+        coordY.add(currentSol.getCost());
         coordX.add(currentIter);
 
-        List<Solution> termMemory = new ArrayList<>();
-        int lockCounter = 0;
         while (currentIter < MAX_EVALS){
-//            Solution perturbedSolution = strongPerturbation(allNd, currentSol);
-            Solution perturbedSolution = weakPerturbation(allNd, currentSol);
-            LocalSearchObj localSearchObj = localSearch(perturbedSolution, allNd);
-            Solution lsSolution = localSearchObj.getSolution();
+            // TODO: testa strong perturbation
+            Solution perturbedSolution = weakPerturbation(allEdgesOfGraph, allVertices, currentSol);
 
-            if (!termMemory.contains(lsSolution)){
-                termMemory.add(lsSolution);
+            // TODO: localSearch
+            LocalSearchObj lsSol = localSearch(perturbedSolution);
+
+            currentSol = acceptanceCriteria(perturbedSolution, perturbedSolution);
+
+            if(currentSol.getCost() < bestSolutionToRet.getCost()){
+                bestSolutionToRet = new Solution(instancePath, currentSol.getSelectedVertex(), currentSol.getSelectedEdges(), currentSol.getCost());
+                iterBsToRet = currentIter;
             }
 
-            currentSol = acceptanceCriteria(lsSolution, currentSol, termMemory, lockCounter);
-
-            if (currentSol.getTotalCost() < bestSolutionToRet.getTotalCost()){
-                bestSolutionToRet = currentSol;
-                iterBsToRet = currentIter + localSearchObj.getIteration();
-            } else {
-                lockCounter+=1;
-            }
-
-            currentIter+= localSearchObj.getIteration();
-
-            coordY.add(currentSol.getTotalCost());
+            coordY.add(currentSol.getCost());
             coordX.add(currentIter);
 
+            currentIter+=lsSol.getIteration();
         }
 
         long endTime = System.nanoTime();
         long durationMs = (endTime - startTime) / 1000000;  //divide by 1000000 to get milliseconds.
 
         IlsObj toRet = new IlsObj(bestSolutionToRet, iterBsToRet, durationMs);
-
-        System.out.println("Execution time for " + bestSolutionToRet.getInstanceName() + ": " + durationMs +" ms\n");
 
         Plot plt = Plot.create();
         plt.plot().add(coordX, coordY, "o-");
@@ -314,7 +324,8 @@ public class Main {
         return toRet;
     }
 
-    public static void main(String[] args) throws IOException, PythonExecutionException {
+    public static void main(String[] args) throws Exception {
+
         List<String[]> ilsInfo = new ArrayList<>();
 
         // Esecuzione su directory!
@@ -326,7 +337,7 @@ public class Main {
 
                 Graph instGraph = getInstance(listOfFiles[i].toString());
                 IlsObj ilsObj = IteratedLocalSearch(instGraph, listOfFiles[i].getName());
-                String[] ilsRes = {listOfFiles[i].getName(), String.valueOf(ilsObj.getSolution().getTotalCost()), String.valueOf(ilsObj.getIterSolutionFounded()), String.valueOf(ilsObj.getElapsedTime()) };
+                String[] ilsRes = {listOfFiles[i].getName(), String.valueOf(ilsObj.getSolution().getCost()), String.valueOf(ilsObj.getIterSolutionFounded()), String.valueOf(ilsObj.getElapsedTime()) };
                 ilsInfo.add(ilsRes);
             }
             else if (listOfFiles[i].isDirectory()) {
@@ -342,8 +353,9 @@ public class Main {
             writer.writeAll(csvData);
         }
 
-
     }
+
+
 
     private static List<String[]> createCsv(List<String[]> records) {
         String[] header = {"instance", "best solution", "best solution iter", "elapsed ms"};
@@ -358,4 +370,5 @@ public class Main {
 
         return list;
     }
+
 }

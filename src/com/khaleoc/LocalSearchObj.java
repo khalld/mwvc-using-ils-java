@@ -1,5 +1,6 @@
 package com.khaleoc;
 
+
 public class LocalSearchObj {
     public Solution solution;
     public int iteration;
@@ -13,15 +14,8 @@ public class LocalSearchObj {
         return iteration;
     }
 
-    public void setIteration(int iteration) {
-        this.iteration = iteration;
-    }
-
     public Solution getSolution() {
         return solution;
     }
 
-    public void setSolution(Solution solution) {
-        this.solution = solution;
-    }
 }
