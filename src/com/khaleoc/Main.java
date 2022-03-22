@@ -5,6 +5,7 @@ import com.github.sh0nk.matplotlib4j.PythonExecutionException;
 import com.opencsv.CSVWriter;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -113,9 +114,6 @@ public class Main {
         Solution initialSol = new Solution(instanceName, selectedVertex, selectedEges, totalWeight);
 
         Solution toRet = checkValidity(initialSol, graph, allVertex);
-
-
-//        System.out.println("Total Weight: "+totalWeight);
 
         return toRet;
     }
@@ -246,13 +244,13 @@ public class Main {
         return prevSol;
     }
 
-    public static LocalSearchObj localSearch(Solution inputSolution){
+    public static LocalSearchObj localSearch(Solution inputSolution, ArrayList<Edge> allEdgesOfGraph, ArrayList<Vertex>allVertices){
         int iterator = 1000;
 
         // FIXME
         Solution toCheckValidity = new Solution(inputSolution.getInstanceName(), inputSolution.getSelectedVertex(), inputSolution.getSelectedEdges(), inputSolution.getCost());
 
-        LocalSearchObj toReturn = new LocalSearchObj(inputSolution, iterator);
+        LocalSearchObj toReturn = new LocalSearchObj(toCheckValidity, iterator);
 
         return toReturn;
     }
@@ -289,11 +287,12 @@ public class Main {
         coordX.add(currentIter);
 
         while (currentIter < MAX_EVALS){
+            System.out.println(currentIter);
             // TODO: testa strong perturbation
             Solution perturbedSolution = weakPerturbation(allEdgesOfGraph, allVertices, currentSol);
 
             // TODO: localSearch
-            LocalSearchObj lsSol = localSearch(perturbedSolution);
+            LocalSearchObj lsSol = localSearch(perturbedSolution, allEdgesOfGraph, allVertices);
 
             currentSol = acceptanceCriteria(perturbedSolution, perturbedSolution);
 
