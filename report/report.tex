@@ -40,18 +40,18 @@ A solution for MWVC using Iterated Local Search \\
 \section{Introduzione}
 
 Si propone una soluzione per il Weight Vertex Cover problem utilizzando l'Iterated Local Search: l'obbiettivo proposto è trovare la migliore soluzione, data un istanza, con il minimo numero di iterazioni. I
-Il codice è stato interamente in Java senza utilizzare librerie esterne eccetto \verb|matplotlib4j| per la generazione dei grafici di convergenza e \verb|CSVWriter| per la generazione del \verb|.csv| dei benchmarks.
+Il codice è stato interamente implementato in Java senza l'utilizzo librerie esterne eccetto \verb|matplotlib4j| per la generazione dei grafici di convergenza e \verb|CSVWriter| per la generazione del \verb|.csv| dei ottenuti (non sono stati caricati tutti per evitare di appesantire troppo la repository).
 
 Il codice è interamente disponibile al seguente repository GitHub \href{https://github.com/khalld/mwvc-using-ils-java}{https://github.com/khalld/mwvc-using-ils-java}, nel quale sono stati caricati i risultati di benchmark e parte dei grafici di convergenza realizzati.
 
-Prima di procedere con l'implementazione e la scelta dell'algoritmo, sono state consultate e prese in considerazioni varie pubblicazioni riguardanti la soluzione del problema (indicate a fine relazione). È stata trovata sin da subito interessante implementare una soluzione utilizzando l'Iterated Local Search rispetto all'algoritmo genetico con il quale è computazionalmente più oneroso trovare una buona soluzione iniziale.
+Prima di procedere con l'implementazione e la scelta dell'algoritmo, sono state consultate e prese in considerazioni varie pubblicazioni riguardanti la soluzione del problema (indicate a fine relazione). È stata trovata sin da subito interessante implementare una soluzione utilizzando l'Iterated Local Search, soprattutto rispetto all'algoritmo genetico con il quale è computazionalmente più oneroso trovare una buona soluzione iniziale.
 Se si riuscisse a trovare una buona soluzione iniziale ed implementando un operatore di perturbazione sarebbe più semplice ottenere soluzioni vicine da valutare.
 
 \pagebreak
 
 \section{Generazione della soluzione iniziale}
 
-Banalmente è stato trovato opportuno implementare un algoritmo greedy per costruire la soluzione iniziale. Sono stati effettuati dei test in cui il punto di partenza è la soluzione \textit{peggiore} (che contiene tutti i nodi dell'istanza) le cui performance sono sempre state peggiori rispetto all'algoritmo greedy
+È stato trovato opportuno implementare un algoritmo greedy per costruire la soluzione iniziale. Sono stati effettuate anche delle prove utilizzando come punto la soluzione \textit{peggiore} (che contiene tutti i nodi dell'istanza) con la quale non si sono ottenuti buoni risultati
 
 \begin{algorithm}
     \caption{\texttt{GetInitialSolution}}
@@ -93,16 +93,14 @@ Banalmente è stato trovato opportuno implementare un algoritmo greedy per costr
 
 \section{Validità della soluzione}
 
-La soluzione è da considerarsi completa e valida se tutti gli archi del grafo sono esplorati: di conseguenza sarà necessario controllare la validità della soluzione dopo la rimozione di un nodo.
+La soluzione è da considerarsi completa e valida se tutti gli archi del grafo sono esplorati: di conseguenza sarà necessario controllare la validità della soluzione dopo la rimozione o swap di un vertice.
 Una generica soluzione viene dunque validata scorrendo la lista di adiacenza di tutti i nodi selezionati: se dunque non saranno presenti tutti gli archi del grafo allora sarà considerata non valida.
 
 \section{Operatore di perturbazione}
 
 L'idea generale della perturbazione è quella di modificare i parametri ad ogni iterazione applicando una perturbazione sui nodi selezionati dalla soluzione.
-È stato inoltre già dimostrato da una delle referenze citate che una perturbazione troppo forte potrebbe portare allo stallo dell'ottimo locale: di è conseguenza in una
+È stato inoltre già dimostrato da una delle referenze citate che una perturbazione troppo forte potrebbe portare allo stallo dell'ottimo locale. Di conseguenza in una
 prima fase si è deciso di implementare la seguente:
-
-Un buon algoritmo deve evitare di far cadere sempre nello stesso minimo locale, in generale:
 
 \begin{algorithm}
 \caption{\texttt{WeakPerturbation}}
@@ -115,19 +113,13 @@ Un buon algoritmo deve evitare di far cadere sempre nello stesso minimo locale, 
 \Else{}
 \State\texttt{remove random vertex from already seleceted}
 \State\texttt{add random vertex from list of not seleceted}
-
+\State\Return{\texttt{perturbed solution}}
 \EndIf{}
 
 \end{algorithmic}
 \end{algorithm}
 
-Tra le migliorie che la perturbazione potrebbe apportare alla soluzione vi è:
-\begin{itemize}
-\item{l'eliminazione automaticamente di cicli se questa contiene dei nodi ridondanti;}
-\item{potrebbe rendere la soluzione non completa: di conseguenza applicando nuovamente la LocalSearch è possibile trovare un nodo candidato migliore rispetto a quello rimosso.}
-\end{itemize}
-
-Tuttavia è stato notato, durante fasi di sviluppo, che questo operatore tendeva a perdere efficacia in quanto tendeva a bloccare la soluzione sull'ottimo locale.
+Tuttavia è stato notato, durante le fasi di sviluppo, che questo operatore tendeva a perdere efficacia dopo qualche iterazione, in quanto tendeva a bloccare la soluzione sull'ottimo locale.
 Di conseguenza, è trovato opportuno introdurre un parametro $\epsilon$ ed una variante della \texttt{Weakperturbation}:
 
 \begin{algorithm}
@@ -135,19 +127,21 @@ Di conseguenza, è trovato opportuno introdurre un parametro $\epsilon$ ed una v
     \begin{algorithmic}
     \Require{ \texttt{Solution, availableVertex} }
     \State\texttt{remove random vertex from already seleceted}    
+    \State\Return{\texttt{perturbed solution}}
+
 \end{algorithmic}
 \end{algorithm}
 
 Il parametro $\epsilon$ rappresenta banalmente la percentuale di \textit{risparmio} sul costo tra la soluzione corrente e quella peggiore.
 La \texttt{SecondChoicePerturbation} verrà utilizzata solo quando $\epsilon$ sarà maggiore di \verb|25|: in questo modo la perturbazione non contribuirà al \textit{lock} sull'ottimo locale: basandoci su questa percentuale vi è la certezza che vi saranno alcuni vertici non selezionati.
-Quest'ultima, funziona bene principalmente su istanze \textit{medie} e \textit{grandi}.
+Quest'ultima, funziona bene soprattutto su istanze \textit{medie} e \textit{grandi}.
 
 \pagebreak
 
 
 \section{Criterio di accettazione}
 
-Per evitare che il criterio accetti solo soluzioni migliori rispetto alla precedente è stata introdotta una componente randomica per accettare anche soluzioni \textit{non migliori} in modo da esplorarne il vicinato e cercare di trovare una soluzione ottima.
+Per evitare che vengano accettate solo soluzioni migliori rispetto alla precedente è stata introdotta una componente randomica per accettare anche soluzioni \textit{non migliori} in modo da esplorarne il vicinato e cercare di trovare una soluzione ottima.
 
 \begin{algorithm}
     \caption{AcceptanceCriteria}
@@ -198,58 +192,56 @@ Con una buona dose di fortuna l'algoritmo riesce a trovare una soluzione buona s
 \begin{minipage}{0.49\linewidth}
 \includegraphics[width=\linewidth]{cg_4.png}
 \end{minipage}
+\begin{minipage}{0.49\linewidth}
+\includegraphics[width=\linewidth]{cg_5.png}
+\end{minipage}
+\begin{minipage}{0.49\linewidth}
+\includegraphics[width=\linewidth]{cg_6.png}
+\end{minipage}
 \captionof{figure}{Sample grafici di convergenza}
 \end{center}
 
 
 \pagebreak
 
+Per quanto riguarda l'istanza LPI, i valori si riferiscono ad stata inserita una media su 10 run indipendenti dell'istanza.
+
 \begin{table}[!ht]
     \centering
-    \begin{tabular}{|l|l|l|l|}
+    \begin{tabular}{|l|l|l|}
     \hline
-        instance & best solution & best solution iter & elapsed ms \\ \hline
-
-        vc\_20\_120\_01 & 1253 & 77 & 99 \\ \hline
-        vc\_20\_120\_02 & 1348 & 191 & 94 \\ \hline
-        vc\_20\_120\_03 & 1319 & 58 & 92 \\ \hline
-        vc\_20\_120\_04 & 1414 & 1179 & 99 \\ \hline
-        vc\_20\_120\_05 & 1293 & 761 & 92 \\ \hline
-        vc\_20\_120\_06 & 1271 & 77 & 102 \\ \hline
-        vc\_20\_120\_07 & 1265 & 1806 & 98 \\ \hline
-        vc\_20\_120\_08 & 1520 & 1654 & 98 \\ \hline
-        vc\_20\_120\_09 & 1587 & 229 & 97 \\ \hline
-        vc\_20\_120\_10 & 1452 & 381 & 95 \\ \hline
-        vc\_20\_60\_01 & 1105 & 405 & 33 \\ \hline
-        vc\_20\_60\_02 & 1585 & 476 & 37 \\ \hline
-        vc\_20\_60\_03 & 1313 & 58 & 34 \\ \hline
-        vc\_20\_60\_04 & 1177 & 115 & 37 \\ \hline
-        vc\_20\_60\_05 & 1352 & 324 & 37 \\ \hline
-        vc\_20\_60\_06 & 1426 & 343 & 33 \\ \hline
-        vc\_20\_60\_07 & 1573 & 210 & 36 \\ \hline
-        vc\_20\_60\_08 & 1526 & 39 & 36 \\ \hline
-        vc\_20\_60\_09 & 1595 & 324 & 36 \\ \hline
-        vc\_20\_60\_10 & 1416 & 552 & 35 \\ \hline
-        vc\_25\_150\_01 & 1785 & 265 & 108 \\ \hline
-        vc\_25\_150\_02 & 1472 & 241 & 103 \\ \hline
-        vc\_25\_150\_03 & 1658 & 20000 & 105 \\ \hline
-        vc\_25\_150\_04 & 1923 & 97 & 103 \\ \hline
-        vc\_25\_150\_05 & 1792 & 1849 & 114 \\ \hline
-        vc\_25\_150\_06 & 1651 & 505 & 99 \\ \hline
-        vc\_25\_150\_07 & 1977 & 841 & 104 \\ \hline
-        vc\_25\_150\_08 & 1693 & 361 & 107 \\ \hline
-        vc\_25\_150\_09 & 1739 & 841 & 111 \\ \hline
-        vc\_25\_150\_10 & 1547 & 553 & 102 \\ \hline
-        vc\_200\_750\_01 & 14160 & 1991 & 280 \\ \hline
-        vc\_200\_750\_02 & 13384 & 399 & 201 \\ \hline
-        vc\_200\_750\_03 & 14509 & 6767 & 297 \\ \hline
-        vc\_200\_750\_04 & 13230 & 797 & 306 \\ \hline
-        vc\_200\_750\_05 & 14495 & 399 & 211 \\ \hline
-        vc\_200\_750\_06 & 13586 & 1792 & 325 \\ \hline
-        vc\_200\_750\_07 & 13197 & 7762 & 286 \\ \hline
-        vc\_200\_750\_08 & 13676 & 9155 & 298 \\ \hline
-        vc\_200\_750\_09 & 13710 & 200 & 208 \\ \hline
-        vc\_200\_750\_10 & 13794 & 399 & 211 \\ \hline
+        instance & best solution & best solution iter \\ \hline
+        vc\_800\_10000.txt & 45058 & 8841 \\ \hline
+        vc\_25\_150\_10.txt & 1144 & 14059 \\ \hline
+        vc\_25\_150\_09.txt & 1364 & 17960 \\ \hline
+        vc\_25\_150\_08.txt & 1246 & 12629 \\ \hline
+        vc\_25\_150\_07.txt & 1465 & 6028 \\ \hline
+        vc\_25\_150\_06.txt & 1211 & 12562 \\ \hline
+        vc\_25\_150\_05.txt & 1337 & 18720 \\ \hline
+        vc\_25\_150\_04.txt & 1435 & 10635 \\ \hline
+        vc\_25\_150\_03.txt & 1324 & 16454 \\ \hline
+        vc\_25\_150\_02.txt & 1144 & 13880 \\ \hline
+        vc\_25\_150\_01.txt & 1335 & 10656 \\ \hline
+        vc\_20\_60\_10.txt & 960 & 2251 \\ \hline
+        vc\_20\_60\_09.txt & 1149 & 3083 \\ \hline
+        vc\_20\_60\_08.txt & 1113 & 2001 \\ \hline
+        vc\_20\_60\_07.txt & 1033 & 1926 \\ \hline
+        vc\_20\_60\_06.txt & 980 & 944 \\ \hline
+        vc\_20\_60\_05.txt & 934 & 11274 \\ \hline
+        vc\_20\_60\_04.txt & 819 & 7002 \\ \hline
+        vc\_20\_60\_03.txt & 750 & 2788 \\ \hline
+        vc\_20\_60\_02.txt & 1077 & 893 \\ \hline
+        vc\_20\_60\_01.txt & 930 & 7276 \\ \hline
+        vc\_20\_120\_10.txt & 1054 & 2723 \\ \hline
+        vc\_20\_120\_09.txt & 1160 & 20093 \\ \hline
+        vc\_20\_120\_08.txt & 1099 & 17086 \\ \hline
+        vc\_20\_120\_07.txt & 945 & 2289 \\ \hline
+        vc\_20\_120\_06.txt & 919 & 2064 \\ \hline
+        vc\_20\_120\_05.txt & 939 & 18957 \\ \hline
+        vc\_20\_120\_04.txt & 1031 & 3640 \\ \hline
+        vc\_20\_120\_03.txt & 960 & 648 \\ \hline
+        vc\_20\_120\_02.txt & 1028 & 19134 \\ \hline
+        vc\_20\_120\_01.txt & 898 & 16987 \\ \hline
     \end{tabular}
 \end{table}
 
@@ -259,40 +251,48 @@ Con una buona dose di fortuna l'algoritmo riesce a trovare una soluzione buona s
     \centering
     \begin{tabular}{|l|l|l|l|}
     \hline
-        instance & best solution & best solution iter & elapsed ms \\ \hline
+        instance & best solution & best solution iter \\ \hline
 
-        
-        vc\_100\_2000\_01 & 7027 & 1189 & 3158 \\ \hline
-        vc\_100\_2000\_02 & 6853 & 20000 & 2970 \\ \hline
-        vc\_100\_2000\_03 & 6680 & 20000 & 3032 \\ \hline
-        vc\_100\_2000\_04 & 6890 & 6535 & 2984 \\ \hline
-        vc\_100\_2000\_05 & 7236 & 8812 & 3093 \\ \hline
-        vc\_100\_2000\_06 & 6876 & 2080 & 2873 \\ \hline
-        vc\_100\_2000\_07 & 7322 & 4753 & 3103 \\ \hline
-        vc\_100\_2000\_08 & 7163 & 1090 & 2930 \\ \hline
-        vc\_100\_2000\_09 & 6829 & 793 & 3073 \\ \hline
-        vc\_100\_2000\_10 & 7238 & 1882 & 2977 \\ \hline
-        vc\_100\_500\_01 & 6739 & 5446 & 252 \\ \hline
-        vc\_100\_500\_02 & 7205 & 496 & 225 \\ \hline
-        vc\_100\_500\_03 & 6764 & 10331 & 220 \\ \hline
-        vc\_100\_500\_04 & 6818 & 9802 & 242 \\ \hline
-        vc\_100\_500\_05 & 7185 & 2278 & 254 \\ \hline
-        vc\_100\_500\_06 & 7228 & 3961 & 237 \\ \hline
-        vc\_100\_500\_07 & 6763 & 194 & 81 \\ \hline
-        vc\_100\_500\_08 & 6788 & 397 & 250 \\ \hline
-        vc\_100\_500\_09 & 6894 & 193 & 226 \\ \hline
-        vc\_100\_500\_10 & 6670 & 2773 & 244 \\ \hline
-        vc\_200\_3000\_01 & 13795 & 200 & 2648 \\ \hline
-        vc\_200\_3000\_02 & 13790 & 20000 & 4038 \\ \hline
-        vc\_200\_3000\_03 & 14245 & 8956 & 4144 \\ \hline
-        vc\_200\_3000\_04 & 15082 & 598 & 2681 \\ \hline
-        vc\_200\_3000\_05 & 14095 & 9354 & 4136 \\ \hline
-        vc\_200\_3000\_06 & 13731 & 2588 & 4196 \\ \hline
-        vc\_200\_3000\_07 & 14247 & 16717 & 4083 \\ \hline
-        vc\_200\_3000\_08 & 14197 & 200 & 3903 \\ \hline
-        vc\_200\_3000\_09 & 14294 & 19901 & 4141 \\ \hline
-        vc\_200\_3000\_10 & 13907 & 4976 & 3982 \\ \hline
-        vc\_800\_10000 & 56404 & 6393 & 52037 \\ \hline
+        vc\_200\_750\_10.txt & 9506 & 5725 \\ \hline
+        vc\_200\_750\_09.txt & 10194 & 12447 \\ \hline
+        vc\_200\_750\_08.txt & 9977 & 10051 \\ \hline
+        vc\_200\_750\_07.txt & 8962 & 19990 \\ \hline
+        vc\_200\_750\_06.txt & 9401 & 18489 \\ \hline
+        vc\_200\_750\_05.txt & 10469 & 16295 \\ \hline
+        vc\_200\_750\_04.txt & 9585 & 18489 \\ \hline
+        vc\_200\_750\_03.txt & 9967 & 18263 \\ \hline
+        vc\_200\_750\_02.txt & 10122 & 18489 \\ \hline
+        vc\_200\_750\_01.txt & 9897 & 18489 \\ \hline
+        vc\_200\_3000\_10.txt & 11027 & 12843 \\ \hline
+        vc\_200\_3000\_09.txt & 11412 & 16213 \\ \hline
+        vc\_200\_3000\_08.txt & 11265 & 4097 \\ \hline
+        vc\_200\_3000\_07.txt & 11290 & 11685 \\ \hline
+        vc\_200\_3000\_06.txt & 10885 & 16032 \\ \hline
+        vc\_200\_3000\_05.txt & 11193 & 6571 \\ \hline
+        vc\_200\_3000\_04.txt & 12054 & 12688 \\ \hline
+        vc\_200\_3000\_03.txt & 11298 & 10718 \\ \hline
+        vc\_200\_3000\_02.txt & 10938 & 17094 \\ \hline
+        vc\_200\_3000\_01.txt & 11015 & 19143 \\ \hline
+        vc\_100\_500\_10.txt & 5234 & 15582 \\ \hline
+        vc\_100\_500\_09.txt & 5202 & 15612 \\ \hline
+        vc\_100\_500\_08.txt & 5194 & 16926 \\ \hline
+        vc\_100\_500\_07.txt & 5584 & 7796 \\ \hline
+        vc\_100\_500\_06.txt & 5478 & 10191 \\ \hline
+        vc\_100\_500\_05.txt & 5476 & 8037 \\ \hline
+        vc\_100\_500\_04.txt & 5309 & 13155 \\ \hline
+        vc\_100\_500\_03.txt & 5101 & 13155 \\ \hline
+        vc\_100\_500\_02.txt & 5531 & 18855 \\ \hline
+        vc\_100\_500\_01.txt & 5299 & 12145 \\ \hline
+        vc\_100\_2000\_10.txt & 5676 & 16365 \\ \hline
+        vc\_100\_2000\_09.txt & 5351 & 2727 \\ \hline
+        vc\_100\_2000\_08.txt & 5633 & 14463 \\ \hline
+        vc\_100\_2000\_07.txt & 5764 & 9729 \\ \hline
+        vc\_100\_2000\_06.txt & 5394 & 15683 \\ \hline
+        vc\_100\_2000\_05.txt & 5671 & 16801 \\ \hline
+        vc\_100\_2000\_04.txt & 5458 & 13524 \\ \hline
+        vc\_100\_2000\_03.txt & 5255 & 11275 \\ \hline
+        vc\_100\_2000\_02.txt & 5388 & 2967 \\ \hline
+        vc\_100\_2000\_01.txt & 5517 & 13586 \\ \hline
 
     \end{tabular}
 \end{table}
@@ -303,9 +303,9 @@ Una delle difficoltà più grandi trovate durante l'implementazione è stato que
 
 \begin{itemize}
     \item{implementare altri criteri per la selezione del nodo;}
-    \item{implementare altri criteri di accettazione;}
+    \item{implementazione e studio di altri criteri di accettazione;}
     \item{perfezionare l'algoritmo su istanze piccole;}
-    \item{implementare altre soluzioni di partenza.}
+    \item{testare implementazione con altre soluzioni di partenza.}
 \end{itemize}
 
 \pagebreak
