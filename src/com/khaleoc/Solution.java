@@ -16,6 +16,14 @@ public class Solution {
         this.cost = cost;
     }
 
+    public Solution(String instanceName, List<Vertex> selectedVertex){
+        this.cost = 0;
+        this.instanceName = instanceName.replace(".txt", "");
+        this.selectedVertex = selectedVertex;
+        this.selectedEdges = new ArrayList<>();
+        calcReachedEdges();
+    }
+
     public List<Vertex> getSelectedVertex() {
         return selectedVertex;
     }

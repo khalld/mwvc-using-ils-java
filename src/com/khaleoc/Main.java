@@ -5,7 +5,6 @@ import com.github.sh0nk.matplotlib4j.PythonExecutionException;
 import com.opencsv.CSVWriter;
 
 import java.io.*;
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -15,7 +14,15 @@ public class Main {
     public static final String BENCHMARK_FOLDER = "benchmark/";
     public static final String CONV_GRAPH_FOLDER = BENCHMARK_FOLDER + "conv_g/";
 
-    static ArrayList<Edge> getNotFoundedEdge(ArrayList<Edge> allEdges, ArrayList<Edge> selected, List<Vertex> allVertex){
+    static int percent(int a, int b) {
+        float result = 0;
+        result = ((b - a) * 100) / a;
+
+        return (int)result;
+    }
+
+    static SolutionKnowledge getNotFoundedEdge(ArrayList<Edge> allEdges, ArrayList<Edge> selected, List<Vertex> allVertex){
+        int iter = 1;
         ArrayList<Edge> allEdgesFounded = new ArrayList<>();
         for (int i = 0; i < selected.size(); i++){
             Edge currentEdge = selected.get(i);
@@ -25,6 +32,7 @@ public class Main {
                 if(!allEdgesFounded.contains(from.getAdjList().get(j))){
                     allEdgesFounded.add(from.getAdjList().get(j));
                 }
+                iter+=1;
             }
 
             Vertex dest = allVertex.get(currentEdge.getDest());
@@ -33,8 +41,9 @@ public class Main {
                 if(!allEdgesFounded.contains(dest.getAdjList().get(j))){
                     allEdgesFounded.add(dest.getAdjList().get(j));
                 }
+                iter+=1;
             }
-
+            iter+=1;
         }
 
         ArrayList<Edge> notFounded = new ArrayList<>();
@@ -42,27 +51,37 @@ public class Main {
             if (!allEdgesFounded.contains(e)) {
                 notFounded.add(e);
             }
+            iter+=1;
         }
 
-        return notFounded;
+        SolutionKnowledge knowledge = new SolutionKnowledge(iter, notFounded);
+
+        return knowledge;
     }
 
-    static boolean isValidSolution(Solution inputSol, ArrayList<Edge> allEdges, ArrayList<Vertex> allVertex){
-        ArrayList<Edge> notFounded = getNotFoundedEdge(allEdges, inputSol.getSelectedEdges(), allVertex);
+    static ValidityAndEvaluations isValidSolution(Solution inputSol, ArrayList<Edge> allEdges, ArrayList<Vertex> allVertex){
+        SolutionKnowledge knowledgeAboutSolution = getNotFoundedEdge(allEdges, inputSol.getSelectedEdges(), allVertex);
 
-        if (notFounded.size() == 0){
-            return true;
+        if ( knowledgeAboutSolution.getNotFoundedEges().size() == 0){
+            ValidityAndEvaluations result = new ValidityAndEvaluations(true, knowledgeAboutSolution.getEvaluations());
+            return result;
         }
-        return false;
+        ValidityAndEvaluations result = new ValidityAndEvaluations(true, knowledgeAboutSolution.getEvaluations());
+        return result;
     }
 
     static LocalSearchObj localSearch(Solution inputSol, ArrayList<Edge> allEdges, ArrayList<Vertex> allVertex){
         int iter = 1;
 
-        boolean isValid = isValidSolution(inputSol, allEdges, allVertex);
+        ValidityAndEvaluations validityAndEvaluations = isValidSolution(inputSol, allEdges, allVertex);
+
+        boolean isValid = validityAndEvaluations.isValidity();
 
         while (isValid == false){
-            ArrayList<Edge> notFounded = getNotFoundedEdge(allEdges, inputSol.getSelectedEdges(), allVertex);
+
+            SolutionKnowledge sk = getNotFoundedEdge(allEdges, inputSol.getSelectedEdges(), allVertex);
+            iter+= sk.getEvaluations();
+            ArrayList<Edge> notFounded = sk.getNotFoundedEges();
 
             List<Vertex> candidatesVertex = new ArrayList<>();
 
@@ -81,29 +100,29 @@ public class Main {
 
             int rndVal = (int)Math.floor(Math.random()*(2-1+1)+1);
 
-            Vertex bestWeightValue = candidatesVertex.get(0);
-            for (Vertex cv: candidatesVertex){
-                if (bestWeightValue.getWeight() > cv.getWeight()){
-                    bestWeightValue = cv;
-                }
-                iter+=1;
-            }
-
-            Vertex bestNumNeighborsValue = candidatesVertex.get(0);
-            for (Vertex cv: candidatesVertex){
-                if (bestNumNeighborsValue.getAdjListSize() < cv.getAdjListSize()){
-                    bestNumNeighborsValue = cv;
-                }
-                iter+=1;
-            }
-
             if (rndVal == 1){
+                Vertex bestWeightValue = candidatesVertex.get(0);
+                for (Vertex cv: candidatesVertex){
+                    if (bestWeightValue.getWeight() > cv.getWeight()){
+                        bestWeightValue = cv;
+                    }
+                    iter+=1;
+                }
                 inputSol.addVertex(bestWeightValue);
             } else {
+                Vertex bestNumNeighborsValue = candidatesVertex.get(0);
+                for (Vertex cv: candidatesVertex){
+                    if (bestNumNeighborsValue.getAdjListSize() < cv.getAdjListSize()){
+                        bestNumNeighborsValue = cv;
+                    }
+                    iter+=1;
+                }
                 inputSol.addVertex(bestNumNeighborsValue);
             }
 
-            isValid = isValidSolution(inputSol, allEdges, allVertex);
+            validityAndEvaluations = isValidSolution(inputSol, allEdges, allVertex);
+            iter+=validityAndEvaluations.getEvaluations();
+            isValid = validityAndEvaluations.isValidity();
         }
 
         LocalSearchObj toRet = new LocalSearchObj(inputSol, iter);
@@ -112,8 +131,6 @@ public class Main {
     }
 
     public static Solution getInitialSolution(String instanceName, ArrayList<Edge> graph, ArrayList<Vertex> allVertices, ArrayList<Vertex> allVertex) throws Exception {
-
-        int iter = 0;
         ArrayList<Vertex> selectedVertex = new ArrayList<>();
         ArrayList<Edge> selectedEges = new ArrayList<>();
         int totalWeight = 0;
@@ -139,9 +156,6 @@ public class Main {
                     selectedEges.add(edge);
                 }
             }
-
-            iter+=1;
-
         Solution initialSol = new Solution(instanceName, selectedVertex, selectedEges, totalWeight);
 
         return initialSol;
@@ -214,6 +228,18 @@ public class Main {
         return inputSolution;
     }
 
+    public static Solution secondPerturbationChoice(ArrayList<Vertex> allVertex, Solution inputSolution) {
+        List<Vertex> alreadySelected = inputSolution.getSelectedVertex();
+        List<Vertex> notSelectedNodes = new ArrayList<>(allVertex);
+        notSelectedNodes.removeAll(alreadySelected);
+
+        int randomIndexAdd = new Random().nextInt(alreadySelected.size());
+        Vertex toAdd = allVertex.get(randomIndexAdd);
+        inputSolution.addVertex(toAdd);
+
+        return inputSolution;
+    }
+
     public static Solution acceptanceCriteria(Solution prevSol, Solution newSol){
         if (prevSol.getCost() > newSol.getCost()){
             return newSol;
@@ -247,17 +273,27 @@ public class Main {
         Solution currentSol = getInitialSolution(instancePath, allEdgesOfGraph, allVertices, allVertices);
         Solution bestSolutionToRet = new Solution(instancePath, currentSol.getSelectedVertex(), currentSol.getSelectedEdges(), currentSol.getCost());
 
+        Solution worstSolution = new Solution(instancePath, allVertices);
+
         int currentIter = 1;
         int iterBsToRet = 1;
 
         coordY.add(currentSol.getCost());
         coordX.add(currentIter);
 
+        double eps = percent(currentSol.getCost(), worstSolution.getCost());
+
         while (currentIter < MAX_EVALS){
-//            currentIter+=500;
-            System.out.println("iter:" + currentIter + " costo -->" + currentSol.getCost());
-            // TODO: testa strong perturbation
-            Solution perturbedSolution = weakPerturbation(allVertices, currentSol);
+
+            System.out.println("iter-> " + currentIter + " tot cost-> " + currentSol.getCost());
+
+            Solution perturbedSolution;
+
+            if (eps < 25){
+                perturbedSolution = weakPerturbation(allVertices, currentSol);
+            } else {
+                perturbedSolution = secondPerturbationChoice(allVertices, currentSol);
+            }
 
             LocalSearchObj lsSol = localSearch(perturbedSolution, allEdgesOfGraph, allVertices);
 
@@ -272,6 +308,8 @@ public class Main {
 
             coordY.add(currentSol.getCost());
             coordX.add(currentIter);
+
+            eps = percent(currentSol.getCost(), worstSolution.getCost());
 
             currentIter+=lsSol.getIteration();
         }
@@ -322,7 +360,6 @@ public class Main {
         }
 
     }
-
 
 
     private static List<String[]> createCsv(List<String[]> records) {
