@@ -39,119 +39,114 @@ A solution for MWVC using Iterated Local Search \\
 
 \section{Introduzione}
 
-Si propone una soluzione per il Weight Vertex Cover problem utilizzando l'Iterated Local Search: l'obbiettivo proposto è trovare la migliore soluzione, data un istanza, con il minimo numero di iterazioni. Il codice è disponibile al \href{https://github.com/khalld/mwvc-using-ils-java}{seguente} repository di GitHub. \\
-Il codice è stato implementato in Java utilizzando metodi custom. Inizialmente l'algoritmo è stato implementato con Python ma per via degli oneri computazionali (LPI richiedeva diverse ore per essere completato) è stato trovato più opportuno realizzare una versione in Java.
-Prima di procedere con l'implementazione e la scelta dell'algoritmo, sono state consultate e prese in considerazioni varie pubblicazioni riguardanti la soluzione del problema (indicate a fine relazione). È stata trovata sin da subito interessante implementare una soluzione utilizzando l'Iterated Local Search, in particolare se ne propone una versione che perserva soluzioni non ottime sfruttando un \textit{term memory}.
-Sfruttando l'ILS, è possibile ottenere sin da subito una soluzione \textit{completa} (intesa quando l'insieme dei nodi selezionati permette di raggiungere tutti i nodi dell'istanza) dopo poche iterazioni e migliorarla. Inoltre, sfruttando il \textit{term-memory} è possibile tenere traccia delle migliori soluzioni trovate permettendo di accettare e continuare la ricerca su soluzioni peggiori senza perderne traccia avendo la possibilità di ripescarle nell'operatore di perturbazione.
+Si propone una soluzione per il Weight Vertex Cover problem utilizzando l'Iterated Local Search: l'obbiettivo proposto è trovare la migliore soluzione, data un istanza, con il minimo numero di iterazioni. I
+Il codice è stato interamente in Java senza utilizzare librerie esterne eccetto \verb|matplotlib4j| per la generazione dei grafici di convergenza e \verb|CSVWriter| per la generazione del \verb|.csv| dei benchmarks.
+
+Il codice è interamente disponibile al seguente repository GitHub \href{https://github.com/khalld/mwvc-using-ils-java}{https://github.com/khalld/mwvc-using-ils-java}, nel quale sono stati caricati i risultati di benchmark e parte dei grafici di convergenza realizzati.
+
+Prima di procedere con l'implementazione e la scelta dell'algoritmo, sono state consultate e prese in considerazioni varie pubblicazioni riguardanti la soluzione del problema (indicate a fine relazione). È stata trovata sin da subito interessante implementare una soluzione utilizzando l'Iterated Local Search rispetto all'algoritmo genetico con il quale è computazionalmente più oneroso trovare una buona soluzione iniziale.
+Se si riuscisse a trovare una buona soluzione iniziale ed implementando un operatore di perturbazione sarebbe più semplice ottenere soluzioni vicine da valutare.
 
 \pagebreak
 
+\section{Generazione della soluzione iniziale}
 
-\section{Validità della soluzione}
-
-La soluzione è da considerarsi completa e valida se tutti gli archi del grafo sono esplorati. Di conseguenza è necessario controllare la validità della soluzione dopo la rimozione di un nodo.
-È stato implementato un modo per effettuare il controllo di validità in maniera efficiente dimezzando il costo computazionale considerando uguali archi invertiti (\verb|(a,b) = (b,a))| come uguali.
-È stata implementata una funzione per completare eventuali soluzioni non complete dalla \texttt{Perturbazione}.
-
+Banalmente è stato trovato opportuno implementare un algoritmo greedy per costruire la soluzione iniziale. Sono stati effettuati dei test in cui il punto di partenza è la soluzione \textit{peggiore} (che contiene tutti i nodi dell'istanza) le cui performance sono sempre state peggiori rispetto all'algoritmo greedy
 
 \begin{algorithm}
-    \caption{\texttt{CompleteSolution}}
+    \caption{\texttt{GetInitialSolution}}
     \begin{algorithmic}
-        \Require {\texttt{perturbed solution}}
+        \Require {\texttt{graph, allVertex}}
         
-    
-        \If{
-            \State{\texttt{perturbed solution is complete}}
-        }
-            \State{\texttt{do nothing, return perturbed solution}}
-        
-        \Else{}
-            \State{
-                \While{
-                    \State{\texttt{perturbed solution is complete}}
-                }
-                    \State{\texttt{
-                        Get list of unselected nodes
-                    }}
-                    \State{\texttt{
-                        find the best candidate node based on the number of knots (higher) or weight (lower) randomly and add to solution
-                    }}
-                \EndWhile
+        \State{\texttt{totalWeight = 0}}
+        \State{\texttt{selectedVertex = initialize empty list of vertex}}
+        \State{\texttt{selectedEdges = initialize empty list of edges}}
 
-            }
-        
+        \For{\texttt{edge in allEdges}}
+        \State \texttt{get source and destination of current edge}
+        \State \texttt{if is already explored, skip}
+
+        \If{\texttt{sourceVertexWeight < destVertexWeight}}
+            \State\texttt {set sourceVertex explored}
+            \State\texttt{totalWeight+= sourceVertexWeight}
+            \State{\texttt{add sourceVertex to selectedVertex}}
+            \State{\texttt{add current edge to selectedEdges}}
+
+        \Else{\texttt{}}
+
+        \State\texttt {set destVertex explored}
+        \State\texttt{totalWeight+= destVertexWeight}
+        \State{\texttt{add destVertex to selectedVertex}}
+        \State{\texttt{add current edge to selectedEdges}}
+
+
         \EndIf{}
-    \Return { \texttt{CompletePerturbedSolution}}
+        \EndFor
+        
+
+    \Return { \texttt{Initial Solution}}
     \end{algorithmic}
     \end{algorithm}
 
-Dai test effettuati è emerso che l'utilizzo dopo l'operatore di perturbazione tende a far bloccare la soluzione in un ottimo locale, di conseguenza verrà applicata solo dopo l'utilizzo della LocalSearch.
-
-\section{ILS}
-
-Sono stati testati sulle istanze due tipi di approcci:
-
-\begin{itemize}
-\item{costruzione di una soluzione a partire da un nodo iniziale scelto randomicamente;}
-\item {scoperta della soluzione migliore partendo dalla soluzione peggiore (intesa così quella che ha selezionati tutti i nodi presenti nell'istanza);}
-\end{itemize}
-
-I diversi approcci producono circa gli stessi risultati. È stato preso in considerazione, ma scartato durante la fase di test, il random restart della soluzione dato che non ha portato migliorie al risultato finale.
-Nel dettaglio, l'algoritmo ILS presentato parte dalla soluzione \textit{peggiore}, con tutti i nodi dell'istanza selezionati, e per mezzo dell'operatore di perturbazione e della local search si cercherà di ottimizzare la soluzione, oppure da una soluzione completa costruita
-randomicamente 
-
-\begin{algorithm}
-\caption{\texttt{Iterated Local Search}}
-\begin{algorithmic}
-    \Require {\texttt{list of all nodes of instances}}
-
-\State {\texttt{CurrentSolution = Solution with all available nodes selected or Randomly while is complete}}
-\State {\texttt{initialize an empty term-memory}}
-\While{ \texttt{max evaluations} }   
-
-    \State {\texttt{SolutionToChange = CurrentSolution} }
-    \State {\texttt{apply Perturbation to SolutionToChange} }
-    \State {\texttt{apply LocalSearch to SolutionToChange} }
-    \State{
-        \If{\texttt{cost of SolutionToChange < cost of CurrentSolution and SolutionToChange not in term-memory}}
-        \State {\texttt{add SolutionToChange in term-memory}}
-        \EndIf
-    }
-    \State {\texttt{CurrentSolution = SelectCriteria(CurrentSolution, SolutionToChange, term-memory)}}
-\EndWhile
-\Return { \texttt{CurrentSolution}}
-\end{algorithmic}
-\end{algorithm}
 
 \pagebreak
+
+\section{Validità della soluzione}
+
+La soluzione è da considerarsi completa e valida se tutti gli archi del grafo sono esplorati: di conseguenza sarà necessario controllare la validità della soluzione dopo la rimozione di un nodo.
+Una generica soluzione viene dunque validata scorrendo la lista di adiacenza di tutti i nodi selezionati: se dunque non saranno presenti tutti gli archi del grafo allora sarà considerata non valida.
 
 \section{Operatore di perturbazione}
 
 L'idea generale della perturbazione è quella di modificare i parametri ad ogni iterazione applicando una perturbazione sui nodi selezionati dalla soluzione.
+È stato inoltre già dimostrato da una delle referenze citate che una perturbazione troppo forte potrebbe portare allo stallo dell'ottimo locale: di è conseguenza in una
+prima fase si è deciso di implementare la seguente:
+
 Un buon algoritmo deve evitare di far cadere sempre nello stesso minimo locale, in generale:
 
 \begin{algorithm}
-\caption{Perturbation}
+\caption{\texttt{WeakPerturbation}}
 \begin{algorithmic}
-\Require{ \texttt{Solution} }
-\State{\texttt{add random node from list of unselected if is possible}}
-\State{\texttt{remove random node from list of already selected}}
-\State{\Return{\texttt{solution}}}
+\Require{ \texttt{Solution, availableVertex} }
+
+\If{\texttt{ there aren't nodes not selected }}
+\State\texttt{remove random vertex from already seleceted}
+
+\Else{}
+\State\texttt{remove random vertex from already seleceted}
+\State\texttt{add random vertex from list of not seleceted}
+
+\EndIf{}
+
 \end{algorithmic}
 \end{algorithm}
 
-Sono state implementate due versioni di perturbazione rispettivamente: \verb|StrongPerturbation| che rimuove o aggiunge
-randomicamente nodi da 1 o al massimo \verb|selectedNodes \ 2| e \verb|WeakPerturbation| che rimuove/aggiunge un solo nodo dalla soluzione.
-Dai test effettuati portano circa agli stessi risultati. Inoltre è stato già dimostrato, da una delle referenze citate, che una perturbazione troppo forta porta allo stallo dell'ottimo locale.
-
-
-Inoltre, tra le migliorie che la perturbazione potrebbe apportare alla soluzione vi è:
+Tra le migliorie che la perturbazione potrebbe apportare alla soluzione vi è:
 \begin{itemize}
 \item{l'eliminazione automaticamente di cicli se questa contiene dei nodi ridondanti;}
 \item{potrebbe rendere la soluzione non completa: di conseguenza applicando nuovamente la LocalSearch è possibile trovare un nodo candidato migliore rispetto a quello rimosso.}
 \end{itemize}
 
+Tuttavia è stato notato, durante fasi di sviluppo, che questo operatore tendeva a perdere efficacia in quanto tendeva a bloccare la soluzione sull'ottimo locale.
+Di conseguenza, è trovato opportuno introdurre un parametro $\epsilon$ ed una variante della \texttt{Weakperturbation}:
+
+\begin{algorithm}
+    \caption{\texttt{SecondChoicePerturbation}}
+    \begin{algorithmic}
+    \Require{ \texttt{Solution, availableVertex} }
+    \State\texttt{remove random vertex from already seleceted}    
+\end{algorithmic}
+\end{algorithm}
+
+Il parametro $\epsilon$ rappresenta banalmente la percentuale di \textit{risparmio} sul costo tra la soluzione corrente e quella peggiore.
+La \texttt{SecondChoicePerturbation} verrà utilizzata solo quando $\epsilon$ sarà maggiore di \verb|25|: in questo modo la perturbazione non contribuirà al \textit{lock} sull'ottimo locale.
+
 \pagebreak
+
+
+\section{Criterio di accettazione}
+
+Per evitare che il criterio accetti solo soluzioni migliori rispetto alla precedente è stata introdotta una componente randomica per accettare anche soluzioni \textit{non migliori}.
 
 \section{Local Search e criterio di selezione del nodo migliore}
 
