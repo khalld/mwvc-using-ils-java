@@ -2,18 +2,17 @@ package com.khaleoc;
 
 import com.github.sh0nk.matplotlib4j.Plot;
 import com.github.sh0nk.matplotlib4j.PythonExecutionException;
+import com.opencsv.CSVWriter;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class Main2 {
     public static final int MAX_EVALS = 20000;
-    public static final String BENCHMARK_FOLDER = "bench-new/";
-    public static final String CONV_GRAPH_FOLDER = "bench-new/conv_g/";
-
+    public static final String FOLDER_INSTANCES = "wvcp-instances-red";
+    public static final String BENCHMARK_FOLDER = "benchmark/";
+    public static final String CONV_GRAPH_FOLDER = BENCHMARK_FOLDER + "conv_g/";
 
     static ArrayList<Edge> getNotFoundedEdge(ArrayList<Edge> allEdges, ArrayList<Edge> selected, List<Vertex> allVertex){
         ArrayList<Edge> allEdgesFounded = new ArrayList<>();
@@ -51,7 +50,6 @@ public class Main2 {
         ArrayList<Edge> notFounded = getNotFoundedEdge(allEdges, inputSol.getSelectedEdges(), allVertex);
 
         while (notFounded.size() != 0 ){
-//             TODO: trova tra i nodi non selezionati quello mancante ed aggiungi quello con minore costo
             List<Vertex> candidatesVertex = new ArrayList<>();
 
             for(int i=0; i<notFounded.size(); i++){
@@ -68,7 +66,14 @@ public class Main2 {
 
             }
 
-            // TODO: migliora la scelta del candidato
+            int rndVal = (int)Math.floor(Math.random()*(2-1+1)+1);
+
+            if (rndVal == 1){
+                candidatesVertex.sort(Comparator.comparing(Vertex::getWeight));
+            } else {
+                candidatesVertex.sort(Comparator.comparing(Vertex::getAdjListSize).reversed());
+            }
+
             inputSol.addVertex(candidatesVertex.get(0));
 
             notFounded = getNotFoundedEdge(allEdges, inputSol.getSelectedEdges(), allVertex);
@@ -77,7 +82,7 @@ public class Main2 {
         return inputSol;
     }
 
-    public static Solution2 getInitialSolution(ArrayList<Edge> graph, ArrayList<Vertex> allVertices, ArrayList<Vertex> allVertex) throws Exception {
+    public static Solution2 getInitialSolution(String instanceName, ArrayList<Edge> graph, ArrayList<Vertex> allVertices, ArrayList<Vertex> allVertex) throws Exception {
 
         ArrayList<Vertex> selectedVertex = new ArrayList<>();
         ArrayList<Edge> selectedEges = new ArrayList<>();
@@ -105,7 +110,7 @@ public class Main2 {
                 }
             }
 
-        Solution2 initialSol = new Solution2(selectedVertex, selectedEges, totalWeight);
+        Solution2 initialSol = new Solution2(instanceName, selectedVertex, selectedEges, totalWeight);
 
         Solution2 toRet = checkValidity(initialSol, graph, allVertex);
 
@@ -158,15 +163,74 @@ public class Main2 {
         return currentGraph;
     }
 
+
+    // TODO:
+    public static Solution strongPerturbation(List<Node> allNd, Solution inputSolution) {
+
+//        List<Node> alreadySelected = inputSolution.getSelNodes();
+//        List<Node> notSelectedNodes = new ArrayList<>(allNd);
+//        notSelectedNodes.removeAll(alreadySelected);
+//
+//        int max = (int)alreadySelected.size() / 2;
+//        int min = 1;
+//        int pert_times = (int)Math.floor(Math.random()*(max-min+1)+min);
+//
+//        if(notSelectedNodes.size() == 0){
+//            // Posso solo rimuovere
+//            for (int i = 0; i < pert_times; i++){
+//                int randomIndex = new Random().nextInt(alreadySelected.size());
+//                Node toRem = allNd.get(randomIndex);
+//                inputSolution.removeNode(toRem);
+//                alreadySelected = inputSolution.getSelNodes();
+//                notSelectedNodes = new ArrayList<>(allNd);
+//                notSelectedNodes.removeAll(alreadySelected);
+//            }
+//        } else {
+//            // Posso anche aggiungere nodi alla perturbazione
+//            for (int i=0; i<pert_times; i++){
+//                int randomIndexAdd = new Random().nextInt(notSelectedNodes.size());
+//                int randomIndexRem = new Random().nextInt(alreadySelected.size());
+//
+//                Node toRem = allNd.get(randomIndexRem);
+//                Node toAdd = allNd.get(randomIndexAdd);
+//                inputSolution.removeNode(toRem);
+//                inputSolution.addNode(toAdd);
+//
+//                alreadySelected = inputSolution.getSelNodes();
+//                notSelectedNodes = new ArrayList<>(allNd);
+//                notSelectedNodes.removeAll(alreadySelected);
+//            }
+//
+//        }
+//
+////        Solution inputSolutionChecked = completeSol(inputSolution, allNd);
+//
+//        return inputSolution;
+        return null;
+    }
+
     public static Solution2 weakPerturbation(ArrayList<Edge> allEdgesOfGraph, ArrayList<Vertex> allVertex, Solution2 inputSolution) {
         // TODO: prevedi anche l'aggiunta
         List<Vertex> alreadySelected = inputSolution.getSelectedVertex();
         List<Vertex> notSelectedNodes = new ArrayList<>(allVertex);
         notSelectedNodes.removeAll(alreadySelected);
 
-        int randomIndex = new Random().nextInt(alreadySelected.size());
-        Vertex toRem = allVertex.get(randomIndex);
-        inputSolution.removeVertex(toRem);
+        if(notSelectedNodes.size() == 0){
+            // Posso solo rimuovere
+            int randomIndex = new Random().nextInt(alreadySelected.size());
+            Vertex toRem = allVertex.get(randomIndex);
+            inputSolution.removeVertex(toRem);
+        } else {
+            // Posso anche aggiungere nodi alla perturbazione
+            int randomIndexRem = new Random().nextInt(alreadySelected.size());
+            int randomIndexAdd = new Random().nextInt(alreadySelected.size());
+
+            Vertex toRem = allVertex.get(randomIndexRem);
+            inputSolution.removeVertex(toRem);
+            Vertex toAdd = allVertex.get(randomIndexAdd);
+            inputSolution.addVertex(toAdd);
+        }
+
 
         Solution2 toRet = checkValidity(inputSolution, allEdgesOfGraph, allVertex);
 
@@ -174,8 +238,11 @@ public class Main2 {
     }
 
     public static Solution2 acceptanceCriteria(Solution2 prevSol, Solution2 newSol){
-        //TODO: rendilo + robusto
         if (prevSol.getCost() > newSol.getCost()){
+            return newSol;
+        }
+
+        if ((int)Math.floor(Math.random()*(2-1+1)+1) == 1){
             return newSol;
         }
 
@@ -186,14 +253,14 @@ public class Main2 {
         int iterator = 1000;
 
         // FIXME
-        Solution2 toCheckValidity = new Solution2(inputSolution.getSelectedVertex(), inputSolution.getSelectedEdges(), inputSolution.getCost());
+        Solution2 toCheckValidity = new Solution2(inputSolution.getInstanceName(), inputSolution.getSelectedVertex(), inputSolution.getSelectedEdges(), inputSolution.getCost());
 
         LocalSearchObj2 toReturn = new LocalSearchObj2(inputSolution, iterator);
 
         return toReturn;
     }
 
-    public static IlsObj IteratedLocalSearch(Graph instanceGraph, String instancePath) throws Exception {
+    public static IlsObj IteratedLocalSearch(Graph instanceGraph, String instancePath) throws Exception, PythonExecutionException {
         int currentIter = 1;
         int iterBsToRet = 1;
         long startTime = System.nanoTime();
@@ -201,11 +268,9 @@ public class Main2 {
         final List<Integer> coordY = new ArrayList<>();
         final List<Integer> coordX = new ArrayList<>();
 
-        final List<Node> allNd = instanceGraph.getNodes();
-
         final ArrayList<Edge> allEdgesOfGraph = new ArrayList<>();
-        for (int i = 0; i<allNd.size(); i++){
-            List<Edge> currentEdgeList = allNd.get(i).getEdgeList();
+        for (int i = 0; i<instanceGraph.getNodes().size(); i++){
+            List<Edge> currentEdgeList = instanceGraph.getNodes().get(i).getEdgeList();
             int currEdgeListSize = currentEdgeList.size();
             for (int j = 0; j < currEdgeListSize; j++){
                 allEdgesOfGraph.add(currentEdgeList.get(j));
@@ -214,14 +279,14 @@ public class Main2 {
 
         ArrayList<Vertex> allVertices = new ArrayList<>();
 
-        for (int i=0; i< allNd.size(); i++){
-            allVertices.add(new Vertex(i, allNd.get(i).getWeight(), allNd.get(i).getEdgeList()));
+        for (int i=0; i< instanceGraph.getNodes().size(); i++){
+            allVertices.add(new Vertex(i, instanceGraph.getNodes().get(i).getWeight(), instanceGraph.getNodes().get(i).getEdgeList()));
         }
 
         // A PARTIRE DA QUI.. da sopra x ora nn toccare, sistema quando finisci
 
-        Solution2 currentSol = getInitialSolution(allEdgesOfGraph, allVertices, allVertices);
-        Solution2 bestSolutionToRet = new Solution2(currentSol.getSelectedVertex(), currentSol.getSelectedEdges(), currentSol.getCost());
+        Solution2 currentSol = getInitialSolution(instancePath, allEdgesOfGraph, allVertices, allVertices);
+        Solution2 bestSolutionToRet = new Solution2(instancePath, currentSol.getSelectedVertex(), currentSol.getSelectedEdges(), currentSol.getCost());
 
         coordY.add(currentSol.getCost());
         coordX.add(currentIter);
@@ -234,41 +299,80 @@ public class Main2 {
             // TODO: localSearch
             LocalSearchObj2 lsSol = localSearch(perturbedSolution);
 
-            // TODO: Miglioralo
             currentSol = acceptanceCriteria(perturbedSolution, perturbedSolution);
 
-            currentIter+=lsSol.getIteration();
+            if(currentSol.getCost() < bestSolutionToRet.getCost()){
+                bestSolutionToRet = new Solution2(instancePath, currentSol.getSelectedVertex(), currentSol.getSelectedEdges(), currentSol.getCost());
+                iterBsToRet = currentIter;
+            }
+
             coordY.add(currentSol.getCost());
             coordX.add(currentIter);
 
+            currentIter+=lsSol.getIteration();
         }
 
         long endTime = System.nanoTime();
         long durationMs = (endTime - startTime) / 1000000;  //divide by 1000000 to get milliseconds.
 
-//        IlsObj toRet = new IlsObj(bestSolutionToRet, iterBsToRet, durationMs);
-//
-//        System.out.println("Execution time for " + bestSolutionToRet.getInstanceName() + ": " + durationMs +" ms\n");
+        IlsObj toRet = new IlsObj(bestSolutionToRet, iterBsToRet, durationMs);
 
-        // TODO: Decommenta
         Plot plt = Plot.create();
         plt.plot().add(coordX, coordY, "o-");
         plt.xlabel("Iteration");
         plt.ylabel("Cost");
-        plt.title("Convergence graph for: " + instancePath);
-        plt.savefig(CONV_GRAPH_FOLDER + instancePath +".png");
+        plt.title("Convergence graph for: " + bestSolutionToRet.getInstanceName());
+        plt.savefig(CONV_GRAPH_FOLDER + bestSolutionToRet.getInstanceName() +".png");
         plt.executeSilently();
 
-        return null;
+        return toRet;
     }
 
     public static void main(String[] args) throws Exception {
 
-        // TODO: Copia tutto da main 1
-        Graph instGraph = getInstance("wvcp-instances/vc_200_3000_05.txt");
+        List<String[]> ilsInfo = new ArrayList<>();
 
-        IteratedLocalSearch(instGraph, "temp");
+        // Esecuzione su directory!
+        File folder = new File(FOLDER_INSTANCES);
+        File[] listOfFiles = folder.listFiles((dir, name) -> !name.equals(".DS_Store"));
+        for (int i = 0; i < listOfFiles.length; i++) {
+            if (listOfFiles[i].isFile()) {
+                System.out.println("Executing ILS on: " + listOfFiles[i].getName());
 
+                Graph instGraph = getInstance(listOfFiles[i].toString());
+                IlsObj ilsObj = IteratedLocalSearch(instGraph, listOfFiles[i].getName());
+                String[] ilsRes = {listOfFiles[i].getName(), String.valueOf(ilsObj.getSolution().getCost()), String.valueOf(ilsObj.getIterSolutionFounded()), String.valueOf(ilsObj.getElapsedTime()) };
+                ilsInfo.add(ilsRes);
+            }
+            else if (listOfFiles[i].isDirectory()) {
+                System.out.println("Directory " + listOfFiles[i].getName());
+            }
+        }
+
+        List<String[]> csvData = createCsv(ilsInfo);
+
+        // default all fields are enclosed in double quotes
+        // default separator is a comma
+        try (CSVWriter writer = new CSVWriter(new FileWriter(BENCHMARK_FOLDER + "results.csv"))) {
+            writer.writeAll(csvData);
+        }
+
+    }
+
+
+
+    private static List<String[]> createCsv(List<String[]> records) {
+        String[] header = {"instance", "best solution", "best solution iter", "elapsed ms"};
+
+        List<String[]> list = new ArrayList<>();
+        list.add(header);
+
+        for (int i = 0; i < records.size(); i++){
+            String[] current = records.get(i);
+            list.add(current);
+        }
+
+        return list;
     }
 
 }

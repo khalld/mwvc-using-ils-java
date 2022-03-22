@@ -1,7 +1,5 @@
 package com.khaleoc;
 
-import org.apache.commons.collections4.CollectionUtils;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -19,8 +17,6 @@ public class Solution {
     public String instanceName;
 
     public Solution(String instanceName, List<Edge> allEdges) {
-//        String[] completePath = instanceName.split("/");
-//        String instanceFile = completePath[1].replace(".txt", "");
         this.instanceName = instanceName.replace(".txt", "");;
 
         this.allEdges = allEdges;

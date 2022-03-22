@@ -1,17 +1,16 @@
 package com.khaleoc;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
-
 
 public class Solution2 {
+    public String instanceName;
     public List<Vertex> selectedVertex;
     public ArrayList<Edge> selectedEdges;
     int cost;
 
-    public Solution2(List<Vertex> selectedVertex, ArrayList<Edge> selectedEdges, int cost) {
+    public Solution2(String instanceName, List<Vertex> selectedVertex, ArrayList<Edge> selectedEdges, int cost) {
+        this.instanceName = instanceName.replace(".txt", "");
         this.selectedVertex = selectedVertex;
         this.selectedEdges = selectedEdges;
         this.cost = cost;
@@ -33,8 +32,8 @@ public class Solution2 {
         return cost;
     }
 
-    public void setCost(int cost) {
-        this.cost = cost;
+    public String getInstanceName() {
+        return instanceName;
     }
 
     public void addVertex(Vertex v){

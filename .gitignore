@@ -1,9 +1,7 @@
 .idea
 *.DS_Store
 
-benchmarks-strong-pert
-benchmarks-weak-pert
-benchmarks
+wvcp-instances-red
 
 # Compiled class file
 *.class

@@ -36,6 +36,10 @@ public class Vertex{
         return adjList;
     }
 
+    public int getAdjListSize(){
+        return adjList.size();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
