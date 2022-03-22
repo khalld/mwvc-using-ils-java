@@ -57,8 +57,7 @@ public class Main {
     }
 
     static LocalSearchObj localSearch(Solution inputSol, ArrayList<Edge> allEdges, ArrayList<Vertex> allVertex){
-
-        int iter = 0;
+        int iter = 1;
 
         boolean isValid = isValidSolution(inputSol, allEdges, allVertex);
 
@@ -82,20 +81,30 @@ public class Main {
 
             int rndVal = (int)Math.floor(Math.random()*(2-1+1)+1);
 
-            if (rndVal == 1){
-                candidatesVertex.sort(Comparator.comparing(Vertex::getWeight));
-            } else {
-                candidatesVertex.sort(Comparator.comparing(Vertex::getAdjListSize).reversed());
+            Vertex bestWeightValue = candidatesVertex.get(0);
+            for (Vertex cv: candidatesVertex){
+                if (bestWeightValue.getWeight() > cv.getWeight()){
+                    bestWeightValue = cv;
+                }
+                iter+=1;
             }
 
-            inputSol.addVertex(candidatesVertex.get(0));
+            Vertex bestNumNeighborsValue = candidatesVertex.get(0);
+            for (Vertex cv: candidatesVertex){
+                if (bestNumNeighborsValue.getAdjListSize() < cv.getAdjListSize()){
+                    bestNumNeighborsValue = cv;
+                }
+                iter+=1;
+            }
 
-            iter+=1;
+            if (rndVal == 1){
+                inputSol.addVertex(bestWeightValue);
+            } else {
+                inputSol.addVertex(bestNumNeighborsValue);
+            }
 
             isValid = isValidSolution(inputSol, allEdges, allVertex);
         }
-
-        inputSol.setIteration(iter);
 
         LocalSearchObj toRet = new LocalSearchObj(inputSol, iter);
 
@@ -181,51 +190,7 @@ public class Main {
         return currentGraph;
     }
 
-    // TODO:
-    public static void strongPerturbation(List<Node> allNd, Solution inputSolution) {
-
-//        List<Node> alreadySelected = inputSolution.getSelNodes();
-//        List<Node> notSelectedNodes = new ArrayList<>(allNd);
-//        notSelectedNodes.removeAll(alreadySelected);
-//
-//        int max = (int)alreadySelected.size() / 2;
-//        int min = 1;
-//        int pert_times = (int)Math.floor(Math.random()*(max-min+1)+min);
-//
-//        if(notSelectedNodes.size() == 0){
-//            // Posso solo rimuovere
-//            for (int i = 0; i < pert_times; i++){
-//                int randomIndex = new Random().nextInt(alreadySelected.size());
-//                Node toRem = allNd.get(randomIndex);
-//                inputSolution.removeNode(toRem);
-//                alreadySelected = inputSolution.getSelNodes();
-//                notSelectedNodes = new ArrayList<>(allNd);
-//                notSelectedNodes.removeAll(alreadySelected);
-//            }
-//        } else {
-//            // Posso anche aggiungere nodi alla perturbazione
-//            for (int i=0; i<pert_times; i++){
-//                int randomIndexAdd = new Random().nextInt(notSelectedNodes.size());
-//                int randomIndexRem = new Random().nextInt(alreadySelected.size());
-//
-//                Node toRem = allNd.get(randomIndexRem);
-//                Node toAdd = allNd.get(randomIndexAdd);
-//                inputSolution.removeNode(toRem);
-//                inputSolution.addNode(toAdd);
-//
-//                alreadySelected = inputSolution.getSelNodes();
-//                notSelectedNodes = new ArrayList<>(allNd);
-//                notSelectedNodes.removeAll(alreadySelected);
-//            }
-//
-//        }
-//
-////        Solution inputSolutionChecked = completeSol(inputSolution, allNd);
-//
-//        return inputSolution;
-    }
-
-    public static Solution weakPerturbation(ArrayList<Edge> allEdgesOfGraph, ArrayList<Vertex> allVertex, Solution inputSolution) {
+    public static Solution weakPerturbation(ArrayList<Vertex> allVertex, Solution inputSolution) {
         List<Vertex> alreadySelected = inputSolution.getSelectedVertex();
         List<Vertex> notSelectedNodes = new ArrayList<>(allVertex);
         notSelectedNodes.removeAll(alreadySelected);
@@ -279,25 +244,26 @@ public class Main {
             }
         }
 
-
         Solution currentSol = getInitialSolution(instancePath, allEdgesOfGraph, allVertices, allVertices);
         Solution bestSolutionToRet = new Solution(instancePath, currentSol.getSelectedVertex(), currentSol.getSelectedEdges(), currentSol.getCost());
 
-        int currentIter = currentSol.getIteration();
-        int iterBsToRet = bestSolutionToRet.getIteration();
+        int currentIter = 1;
+        int iterBsToRet = 1;
 
         coordY.add(currentSol.getCost());
         coordX.add(currentIter);
 
         while (currentIter < MAX_EVALS){
-            currentIter+=500;
-            System.out.println(currentIter);
+//            currentIter+=500;
+            System.out.println("iter:" + currentIter + " costo -->" + currentSol.getCost());
             // TODO: testa strong perturbation
-            Solution perturbedSolution = weakPerturbation(allEdgesOfGraph, allVertices, currentSol);
+            Solution perturbedSolution = weakPerturbation(allVertices, currentSol);
 
             LocalSearchObj lsSol = localSearch(perturbedSolution, allEdgesOfGraph, allVertices);
 
-            currentSol = acceptanceCriteria(lsSol.getSolution(), perturbedSolution);
+            currentIter += lsSol.getIteration();
+
+            currentSol = acceptanceCriteria(lsSol.getSolution(), currentSol);
 
             if(currentSol.getCost() < bestSolutionToRet.getCost()){
                 bestSolutionToRet = new Solution(instancePath, currentSol.getSelectedVertex(), currentSol.getSelectedEdges(), currentSol.getCost());

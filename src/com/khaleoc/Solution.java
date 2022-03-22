@@ -8,14 +8,12 @@ public class Solution {
     public List<Vertex> selectedVertex;
     public ArrayList<Edge> selectedEdges;
     int cost;
-    int iteration;
 
     public Solution(String instanceName, List<Vertex> selectedVertex, ArrayList<Edge> selectedEdges, int cost) {
         this.instanceName = instanceName.replace(".txt", "");
         this.selectedVertex = selectedVertex;
         this.selectedEdges = selectedEdges;
         this.cost = cost;
-        this.iteration = 0;
     }
 
     public List<Vertex> getSelectedVertex() {
@@ -75,11 +73,4 @@ public class Solution {
         }
     }
 
-    public int getIteration() {
-        return iteration;
-    }
-
-    public void setIteration(int iteration) {
-        this.iteration = iteration;
-    }
 }
