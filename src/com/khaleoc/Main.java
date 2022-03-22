@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 
 public class Main {
     public static final int MAX_EVALS = 20000;
-    public static final String FOLDER_INSTANCES = "wvcp-instances-red";
+    public static final String FOLDER_INSTANCES = "wvcp-instances";
     public static final String BENCHMARK_FOLDER = "benchmark/";
     public static final String CONV_GRAPH_FOLDER = BENCHMARK_FOLDER + "conv_g/";
 
